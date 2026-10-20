@@ -5,6 +5,7 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import { catalogRouter } from "./routes/catalog.routes";
 import { errorHandler, notFoundHandler } from "./middlewares/errorHandler";
+import { authRouter } from "./routes/auth.routes";
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
 });
 
+app.use("/api/auth", authRouter);
 app.use("/api", catalogRouter);
 
 // Harus paling bawah
