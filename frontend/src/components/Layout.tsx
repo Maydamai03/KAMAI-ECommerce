@@ -1,6 +1,8 @@
 import { Outlet } from "react-router-dom";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
+import CartDrawer from "./CartDrawer";
+import CartSync from "./CartSync";
 
 export default function Layout() {
   return (
@@ -10,6 +12,8 @@ export default function Layout() {
         <Outlet />
       </main>
       <Footer />
+      <CartDrawer />
+      <CartSync />
     </div>
   );
 }

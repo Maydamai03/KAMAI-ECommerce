@@ -5,6 +5,7 @@ import { getProduct } from "../services/catalog";
 import { ApiError } from "../lib/api";
 import { formatRupiah } from "../lib/format";
 import type { ProductDetail } from "../types";
+import { useCartStore } from "../store/cart";
 
 const SIZE_ORDER = ["XS", "S", "M", "L", "XL", "XXL"];
 
@@ -66,6 +67,10 @@ function ProductView({ product }: { product: ProductDetail }) {
   const [activeImage, setActiveImage] = useState(0);
   const [message, setMessage] = useState<{ type: "ok" | "error"; text: string } | null>(null);
 
+  const addItem = useCartStore((s) => s.add);
+  const openCart = useCartStore((s) => s.open);
+  const cartItems = useCartStore((s) => s.items);
+
   const sizesForColor = product.variants
     .filter((v) => v.color === color)
     .sort((a, b) => sizeRank(a.size) - sizeRank(b.size));
@@ -92,17 +97,25 @@ function ProductView({ product }: { product: ProductDetail }) {
   }
 
   function addToCart() {
-    if (!variant) {
-      setMessage({ type: "error", text: "Pilih ukuran terlebih dahulu." });
-      return;
-    }
-    // Placeholder: disambungkan ke store keranjang di Fase 2
-    console.log("Tambah ke keranjang:", { variantId: variant.id, quantity: qty });
-    setMessage({
-      type: "ok",
-      text: "Fitur keranjang akan aktif di tahap berikutnya.",
-    });
+  if (!variant) {
+    setMessage({ type: "error", text: "Pilih ukuran terlebih dahulu." });
+    return;
   }
+
+  const before = cartItems.find((i) => i.variantId === variant.id)?.quantity ?? 0;
+  const after = addItem(variant.id, qty, variant.stock);
+
+  if (after === before) {
+    setMessage({
+      type: "error",
+      text: "Jumlah di keranjang sudah mencapai batas pembelian atau stok.",
+    });
+    return;
+  }
+
+  setMessage({ type: "ok", text: "Ditambahkan ke keranjang." });
+  openCart();
+}
 
   const stockLabel = !variant
     ? null

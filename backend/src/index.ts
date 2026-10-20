@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import { catalogRouter } from "./routes/catalog.routes";
 import { errorHandler, notFoundHandler } from "./middlewares/errorHandler";
 import { authRouter } from "./routes/auth.routes";
+import { cartRouter } from "./routes/cart.routes";
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/auth", authRouter);
 app.use("/api", catalogRouter);
+app.use("/api", cartRouter);
 
 // Harus paling bawah
 app.use("/api", notFoundHandler);

@@ -59,3 +59,26 @@ export interface User {
   phone: string | null;
   role: "CUSTOMER" | "ADMIN";
 }
+
+export type CartLineData =
+  | { available: false; variantId: string }
+  | {
+      available: true;
+      variantId: string;
+      productId: string;
+      slug: string;
+      name: string;
+      color: string;
+      size: string;
+      image: string | null;
+      unitPrice: number;
+      weightGram: number;
+      stock: number;
+    };
+
+export interface CartValidation {
+  lines: CartLineData[];
+  subtotal: number;
+  totalWeightGram: number;
+  valid: boolean;
+}
