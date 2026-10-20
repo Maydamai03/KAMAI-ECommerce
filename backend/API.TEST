@@ -1,0 +1,10 @@
+http://localhost:5000/api/categories	3 kategori
+http://localhost:5000/api/products	12 produk, pagination.total = 12
+http://localhost:5000/api/products?category=outerwear	4 produk
+http://localhost:5000/api/products?sort=price_asc&limit=5	5 produk, harga naik
+http://localhost:5000/api/products?q=jacket	produk yang namanya mengandung “jacket”
+http://localhost:5000/api/products?size=XL&color=Hitam	produk yang punya varian itu
+http://localhost:5000/api/products?featured=true	6 produk unggulan
+http://localhost:5000/api/products/hoodie-fleece-heavy	detail + 3 gambar + 8 varian
+http://localhost:5000/api/products/tidak-ada	404 PRODUCT_NOT_FOUND
+http://localhost:5000/api/products?limit=999	400 VALIDATION_ERROR
