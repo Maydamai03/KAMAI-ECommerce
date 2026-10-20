@@ -10,6 +10,9 @@ import ProductsPage from "./pages/ProductsPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import NotFoundPage from "./pages/NotFoundPage";
 
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 60_000, refetchOnWindowFocus: false, retry: 1 },
@@ -23,6 +26,8 @@ const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: "products", element: <ProductsPage /> },
       { path: "products/:slug", element: <ProductDetailPage /> },
+      { path: "login", element: <LoginPage /> },
+      { path: "register", element: <RegisterPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],
   },

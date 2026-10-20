@@ -13,7 +13,7 @@ export class ApiError extends Error {
 
 type Params = Record<string, string | number | undefined>;
 
-export async function apiGet<T>(path: string, params?: Params): Promise<T> {
+async function request<T>(path: string, init: RequestInit = {}, params?: Params): Promise<T> {
   const url = new URL(BASE_URL + path);
   if (params) {
     for (const [key, value] of Object.entries(params)) {
@@ -23,7 +23,7 @@ export async function apiGet<T>(path: string, params?: Params): Promise<T> {
     }
   }
 
-  const res = await fetch(url, { credentials: "include" });
+  const res = await fetch(url, { credentials: "include", ...init });
   const json = await res.json().catch(() => null);
 
   if (!res.ok || !json?.success) {
@@ -34,4 +34,16 @@ export async function apiGet<T>(path: string, params?: Params): Promise<T> {
     );
   }
   return json.data as T;
+}
+
+export function apiGet<T>(path: string, params?: Params) {
+  return request<T>(path, {}, params);
+}
+
+export function apiPost<T>(path: string, body?: unknown) {
+  return request<T>(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
 }

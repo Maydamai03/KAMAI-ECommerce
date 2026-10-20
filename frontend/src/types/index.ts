@@ -51,3 +51,11 @@ export interface FilterOptions {
   minPrice: number;
   maxPrice: number;
 }
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  role: "CUSTOMER" | "ADMIN";
+}
