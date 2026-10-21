@@ -8,6 +8,7 @@ import { errorHandler, notFoundHandler } from "./middlewares/errorHandler";
 import { authRouter } from "./routes/auth.routes";
 import { cartRouter } from "./routes/cart.routes";
 import { meRouter } from "./routes/me.routes";
+import { orderRouter } from "./routes/order.routes";
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/me", meRouter);
 app.use("/api", catalogRouter);
 app.use("/api", cartRouter);
+app.use("/api", orderRouter);
 
 // Harus paling bawah
 app.use("/api", notFoundHandler);
