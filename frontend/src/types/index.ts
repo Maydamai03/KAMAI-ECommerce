@@ -82,3 +82,41 @@ export interface CartValidation {
   totalWeightGram: number;
   valid: boolean;
 }
+
+export interface Address {
+  id: string;
+  recipientName: string;
+  phone: string;
+  province: string;
+  city: string;
+  district: string;
+  postalCode: string;
+  street: string;
+  note: string | null;
+  isDefault: boolean;
+}
+
+export interface AddressInput {
+  recipientName: string;
+  phone: string;
+  province: string;
+  city: string;
+  district: string;
+  postalCode: string;
+  street: string;
+  note?: string;
+  isDefault?: boolean;
+}
+
+export interface AddressFormValues {
+  recipientName: string;
+  phone: string;
+  province: string;
+  city: string;
+  district: string;
+  postalCode: string;
+  street: string;
+  note: string;
+  isDefault: boolean;
+  email: string;
+}

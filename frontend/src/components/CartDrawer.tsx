@@ -98,14 +98,23 @@ export default function CartDrawer() {
               >
                 Lihat Keranjang
               </Link>
-              <button
-                type="button"
-                disabled
-                title="Checkout dibuat di tahap berikutnya"
-                className="bg-black px-4 py-3 text-sm font-semibold text-white disabled:opacity-40"
-              >
-                Checkout (segera)
-              </button>
+              {cart.canCheckout ? (
+                <Link
+                  to="/checkout"
+                  onClick={close}
+                  className="bg-black px-4 py-3 text-center text-sm font-semibold text-white hover:bg-neutral-800"
+                >
+                  Checkout
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="bg-black px-4 py-3 text-sm font-semibold text-white disabled:opacity-40"
+                >
+                  Checkout
+                </button>
+              )}
             </div>
           </div>
         )}

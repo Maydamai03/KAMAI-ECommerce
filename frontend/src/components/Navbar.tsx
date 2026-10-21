@@ -30,9 +30,12 @@ export default function Navbar() {
           {!isLoading &&
             (user ? (
               <div className="flex items-center gap-3">
-                <span className="hidden text-sm text-neutral-600 sm:inline">
+                {/* <span className="hidden text-sm text-neutral-600 sm:inline">
                   Halo, {user.name.split(" ")[0]}
-                </span>
+                </span> */}
+                <Link to="/account" className="hidden text-sm text-neutral-600 hover:text-black sm:inline">
+                  Halo, {user.name.split(" ")[0]}
+                </Link>
                 <button
                   type="button"
                   onClick={() => logout.mutate()}

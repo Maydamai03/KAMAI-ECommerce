@@ -55,14 +55,30 @@ export default function CartPage() {
             </div>
             <p className="mt-1 text-xs text-neutral-500">Ongkos kirim dihitung saat checkout.</p>
 
-            <button
+            {/* <button
               type="button"
               disabled
               title="Checkout dibuat di tahap berikutnya"
               className="mt-6 w-full bg-black px-4 py-3 text-sm font-semibold text-white disabled:opacity-40"
             >
               Lanjut ke Checkout (segera)
-            </button>
+            </button> */}
+            {cart.canCheckout ? (
+                <Link
+                  to="/checkout"
+                  className="mt-6 block w-full bg-black px-4 py-3 text-center text-sm font-semibold text-white hover:bg-neutral-800"
+                >
+                  Lanjut ke Checkout
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="mt-6 w-full bg-black px-4 py-3 text-sm font-semibold text-white disabled:opacity-40"
+                >
+                  Lanjut ke Checkout
+                </button>
+              )}
             {!cart.canCheckout && cart.lines.length > 0 && !cart.isError && (
               <p className="mt-2 text-xs text-neutral-500">
                 Pastikan semua item tersedia sebelum checkout.

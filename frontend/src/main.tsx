@@ -15,6 +15,9 @@ import RegisterPage from "./pages/RegisterPage";
 
 import CartPage from "./pages/CartPage";
 
+import AccountPage from "./pages/AccountPage";
+import CheckoutPage from "./pages/CheckoutPage";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 60_000, refetchOnWindowFocus: false, retry: 1 },
@@ -31,6 +34,8 @@ const router = createBrowserRouter([
       { path: "login", element: <LoginPage /> },
       { path: "register", element: <RegisterPage /> },
       { path: "cart", element: <CartPage /> },
+      { path: "account", element: <AccountPage /> },
+      { path: "checkout", element: <CheckoutPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],
   },
