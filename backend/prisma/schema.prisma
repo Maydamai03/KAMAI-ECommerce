@@ -50,7 +50,7 @@ model User {
 }
 
 model Address {
-  id            String  @id @default(cuid())
+  id            String   @id @default(cuid())
   userId        String
   recipientName String
   phone         String
@@ -61,7 +61,8 @@ model Address {
   postalCode    String
   street        String
   note          String?
-  isDefault     Boolean @default(false)
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
