@@ -18,6 +18,8 @@ import CartPage from "./pages/CartPage";
 import AccountPage from "./pages/AccountPage";
 import CheckoutPage from "./pages/CheckoutPage";
 
+import OrderPage from "./pages/OrderPage";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 60_000, refetchOnWindowFocus: false, retry: 1 },
@@ -36,6 +38,7 @@ const router = createBrowserRouter([
       { path: "cart", element: <CartPage /> },
       { path: "account", element: <AccountPage /> },
       { path: "checkout", element: <CheckoutPage /> },
+      { path: "orders/:orderNumber", element: <OrderPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],
   },

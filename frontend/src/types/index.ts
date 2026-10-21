@@ -120,3 +120,46 @@ export interface AddressFormValues {
   isDefault: boolean;
   email: string;
 }
+
+export type OrderStatus =
+  | "PENDING"
+  | "PAID"
+  | "PROCESSING"
+  | "SHIPPED"
+  | "COMPLETED"
+  | "EXPIRED"
+  | "CANCELLED";
+
+export interface OrderItemView {
+  id: string;
+  productName: string;
+  variantLabel: string;
+  unitPrice: number;
+  quantity: number;
+  lineTotal: number;
+}
+
+export interface OrderShippingAddress {
+  recipientName: string;
+  phone: string;
+  province: string;
+  city: string;
+  district: string;
+  postalCode: string;
+  street: string;
+  note: string | null;
+}
+
+export interface Order {
+  orderNumber: string;
+  status: OrderStatus;
+  subtotal: number;
+  shippingCost: number;
+  total: number;
+  expiresAt: string;
+  createdAt: string;
+  email: string | null;
+  notes: string | null;
+  shippingAddress: OrderShippingAddress;
+  items: OrderItemView[];
+}

@@ -1,22 +1,34 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../hooks/useAuth";
 import { useAddresses } from "../hooks/useAddresses";
 import { useCartLines } from "../hooks/useCartLines";
+import { useCartStore } from "../store/cart";
 import AddressForm from "../components/AddressForm";
 import { toAddressInput } from "../lib/address";
+import { ApiError } from "../lib/api";
+import { TEMP_SHIPPING_COST } from "../lib/constants";
 import { formatRupiah } from "../lib/format";
+import { rememberOrderEmail } from "../lib/orderEmail";
+import { createOrder } from "../services/orders";
 import type { AddressFormValues } from "../types";
 
 export default function CheckoutPage() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user, isLoading: authLoading } = useAuth();
   const cart = useCartLines();
+  const cartItems = useCartStore((s) => s.items);
+  const clearCart = useCartStore((s) => s.clear);
   const { list, create } = useAddresses(Boolean(user));
+  const placeOrder = useMutation({ mutationFn: createOrder });
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [guest, setGuest] = useState<AddressFormValues | null>(null);
   const [editingGuest, setEditingGuest] = useState(true);
+  const [orderError, setOrderError] = useState<string | null>(null);
 
   if (cart.lines.length === 0) {
     return (
@@ -37,6 +49,44 @@ export default function CheckoutPage() {
 
   const addressReady = user ? Boolean(selectedAddress) : Boolean(guest) && !editingGuest;
   const readyToOrder = cart.canCheckout && addressReady;
+
+  async function handlePlaceOrder() {
+    if (!readyToOrder || placeOrder.isPending) return;
+    setOrderError(null);
+
+    const items = cartItems.map((i) => ({ variantId: i.variantId, quantity: i.quantity }));
+    const payload = user
+      ? { items, addressId: selectedAddress?.id }
+      : {
+          items,
+          email: guest?.email,
+          address: guest ? toAddressInput(guest) : undefined,
+        };
+
+    try {
+      const order = await placeOrder.mutateAsync(payload);
+      if (!user && guest) rememberOrderEmail(order.orderNumber, guest.email);
+
+      // Stok berubah, jadi data produk di cache perlu dimuat ulang
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["product"] });
+
+      navigate(`/orders/${order.orderNumber}`, {
+        replace: true,
+        state: { justCreated: true },
+      });
+      clearCart();
+    } catch (e) {
+      if (e instanceof ApiError && e.code === "CART_INVALID") {
+        queryClient.invalidateQueries({ queryKey: ["cart-validate"] });
+        setOrderError(
+          "Stok atau ketersediaan item berubah. Keranjang sudah diperbarui, silakan periksa kembali."
+        );
+      } else {
+        setOrderError(e instanceof ApiError ? e.message : "Gagal membuat pesanan. Coba lagi.");
+      }
+    }
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
@@ -99,11 +149,7 @@ export default function CheckoutPage() {
                 )}
 
                 {!showNewForm && (
-                  <button
-                    type="button"
-                    onClick={() => setAdding(true)}
-                    className="mt-4 text-sm underline"
-                  >
+                  <button type="button" onClick={() => setAdding(true)} className="mt-4 text-sm underline">
                     + Tambah alamat baru
                   </button>
                 )}
@@ -147,11 +193,7 @@ export default function CheckoutPage() {
                     <p className="text-neutral-600">
                       {guest.district}, {guest.city}, {guest.province} {guest.postalCode}
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => setEditingGuest(true)}
-                      className="mt-3 underline"
-                    >
+                    <button type="button" onClick={() => setEditingGuest(true)} className="mt-3 underline">
                       Ubah
                     </button>
                   </div>
@@ -173,13 +215,18 @@ export default function CheckoutPage() {
           </section>
 
           <section className="border-t border-neutral-200 pt-6">
-            <h2 className="text-xl font-bold text-neutral-400">2. Pengiriman</h2>
-            <p className="mt-2 text-sm text-neutral-400">Pilihan kurir tersedia di tahap berikutnya.</p>
+            <h2 className="text-xl font-bold">2. Pengiriman</h2>
+            <p className="mt-2 text-sm text-neutral-600">
+              Sementara memakai tarif tetap {formatRupiah(TEMP_SHIPPING_COST)}. Pilihan kurir dan
+              ongkos kirim otomatis tersedia di tahap berikutnya.
+            </p>
           </section>
 
           <section className="border-t border-neutral-200 pt-6">
             <h2 className="text-xl font-bold text-neutral-400">3. Pembayaran</h2>
-            <p className="mt-2 text-sm text-neutral-400">Pembayaran online tersedia di tahap berikutnya.</p>
+            <p className="mt-2 text-sm text-neutral-400">
+              Pembayaran dilakukan setelah pesanan dibuat. Pembayaran online tersedia di tahap berikutnya.
+            </p>
           </section>
         </div>
 
@@ -215,9 +262,13 @@ export default function CheckoutPage() {
               <span>Subtotal</span>
               <span>{formatRupiah(cart.subtotal)}</span>
             </div>
-            <div className="flex justify-between text-neutral-500">
-              <span>Ongkos kirim</span>
-              <span>Dihitung nanti</span>
+            <div className="flex justify-between">
+              <span>Ongkos kirim (sementara)</span>
+              <span>{formatRupiah(TEMP_SHIPPING_COST)}</span>
+            </div>
+            <div className="flex justify-between border-t border-neutral-200 pt-2 text-base font-bold">
+              <span>Total</span>
+              <span>{formatRupiah(cart.subtotal + TEMP_SHIPPING_COST)}</span>
             </div>
           </div>
 
@@ -226,13 +277,19 @@ export default function CheckoutPage() {
             <li>{addressReady ? "\u2713" : "\u25CB"} Alamat pengiriman dipilih</li>
           </ul>
 
+          {orderError && (
+            <p role="alert" className="mt-4 text-sm text-red-600">
+              {orderError}
+            </p>
+          )}
+
           <button
             type="button"
-            disabled
-            title={readyToOrder ? "Pembuatan pesanan dikerjakan di tahap 3B" : "Lengkapi data terlebih dahulu"}
-            className="mt-5 w-full bg-black px-4 py-3 text-sm font-semibold text-white disabled:opacity-40"
+            onClick={handlePlaceOrder}
+            disabled={!readyToOrder || placeOrder.isPending}
+            className="mt-5 w-full bg-black px-4 py-3 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-40"
           >
-            Buat Pesanan (segera)
+            {placeOrder.isPending ? "Memproses..." : "Buat Pesanan"}
           </button>
 
           <Link to="/cart" className="mt-4 block text-center text-sm underline">
