@@ -13,3 +13,9 @@ export const createOrder = (input: CreateOrderInput) => apiPost<Order>("/orders"
 
 export const getOrder = (orderNumber: string, email?: string) =>
   apiGet<Order>(`/orders/${orderNumber}`, { email });
+
+export const payOrder = (orderNumber: string, email?: string) =>
+  apiPost<{ token: string; redirectUrl: string }>(`/orders/${orderNumber}/pay`, { email });
+
+export const syncOrder = (orderNumber: string, email?: string) =>
+  apiPost<Order>(`/orders/${orderNumber}/sync`, { email });

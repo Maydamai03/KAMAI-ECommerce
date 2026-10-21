@@ -9,8 +9,11 @@ import { authRouter } from "./routes/auth.routes";
 import { cartRouter } from "./routes/cart.routes";
 import { meRouter } from "./routes/me.routes";
 import { orderRouter } from "./routes/order.routes";
+import { paymentRouter } from "./routes/payment.routes";
 
 const app = express();
+// Diperlukan agar IP asli terbaca di belakang ngrok/hosting (untuk rate limit)
+app.set("trust proxy", 1);
 
 app.use(helmet());
 app.use(
@@ -31,6 +34,7 @@ app.use("/api/me", meRouter);
 app.use("/api", catalogRouter);
 app.use("/api", cartRouter);
 app.use("/api", orderRouter);
+app.use("/api", paymentRouter);
 
 // Harus paling bawah
 app.use("/api", notFoundHandler);

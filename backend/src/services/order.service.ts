@@ -251,11 +251,11 @@ export async function createOrder(
   throw new AppError(500, "ORDER_NUMBER_FAILED", "Gagal membuat nomor pesanan. Coba lagi.");
 }
 
-export async function getOrderForViewer(
+export async function findOrderForViewer(
   orderNumber: string,
   viewer?: { id: string; role: string },
   email?: string
-) {
+): Promise<OrderRecord> {
   const order = await prisma.order.findUnique({
     where: { orderNumber },
     include: orderInclude,
@@ -274,5 +274,13 @@ export async function getOrderForViewer(
 
   if (!isOwner && !isAdmin && !(guestOrder && emailMatches)) throw notFound;
 
-  return toOrderView(order);
+  return order;
+}
+
+export async function getOrderForViewer(
+  orderNumber: string,
+  viewer?: { id: string; role: string },
+  email?: string
+) {
+  return toOrderView(await findOrderForViewer(orderNumber, viewer, email));
 }

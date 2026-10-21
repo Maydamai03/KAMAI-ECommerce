@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../hooks/useAuth";
-import { getOrder } from "../services/orders";
+import { getOrder, payOrder, syncOrder } from "../services/orders";
+import { loadSnap } from "../lib/snap";
 import { ApiError } from "../lib/api";
 import { formatDateTime, formatRupiah } from "../lib/format";
 import { forgetOrderEmail, recallOrderEmail, rememberOrderEmail } from "../lib/orderEmail";
@@ -50,6 +51,52 @@ export default function OrderPage() {
 
   const notFound = order.error instanceof ApiError && order.error.status === 404;
   const showEmailForm = !authLoading && !email && (!user || notFound);
+    const queryClient = useQueryClient();
+  const [payError, setPayError] = useState<string | null>(null);
+  const [watching, setWatching] = useState(false);
+
+  const pay = useMutation({ mutationFn: () => payOrder(orderNumber, email ?? undefined) });
+
+  const sync = useMutation({
+    mutationFn: () => syncOrder(orderNumber, email ?? undefined),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["order", orderNumber, user?.id ?? null, email], data);
+    },
+  });
+
+  // Setelah pembayaran dimulai, cek status setiap 5 detik (maks. 3 menit)
+  const currentStatus = order.data?.status;
+  useEffect(() => {
+    if (!watching || currentStatus !== "PENDING") return;
+    const interval = setInterval(() => sync.mutate(), 5000);
+    const stop = setTimeout(() => setWatching(false), 3 * 60 * 1000);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(stop);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watching, currentStatus]);
+
+  async function handlePay() {
+    setPayError(null);
+    try {
+      const [{ token }] = await Promise.all([pay.mutateAsync(), loadSnap()]);
+      window.snap?.pay(token, {
+        onSuccess: () => {
+          setWatching(true);
+          sync.mutate();
+        },
+        onPending: () => {
+          setWatching(true);
+          sync.mutate();
+        },
+        onError: () => setPayError("Pembayaran gagal. Silakan coba lagi."),
+        onClose: () => sync.mutate(),
+      });
+    } catch (e) {
+      setPayError(e instanceof ApiError ? e.message : "Tidak dapat membuka pembayaran. Coba lagi.");
+    }
+  }
 
   function submitEmail(e: FormEvent) {
     e.preventDefault();
@@ -150,10 +197,53 @@ export default function OrderPage() {
       </div>
       <p className="mt-1 text-sm text-neutral-500">Dibuat {formatDateTime(o.createdAt)}</p>
 
-      {o.status === "PENDING" && (
+            {o.status === "PENDING" && (
         <div className="mt-6 border border-orange-200 bg-orange-50 p-4 text-sm text-orange-900">
           <p className="font-medium">Selesaikan pembayaran sebelum {formatDateTime(o.expiresAt)}.</p>
-          <p className="mt-1">Pembayaran online akan diaktifkan di tahap berikutnya.</p>
+          <div className="mt-3 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={handlePay}
+              disabled={pay.isPending}
+              className="bg-black px-6 py-3 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-50"
+            >
+              {pay.isPending ? "Membuka pembayaran..." : "Bayar Sekarang"}
+            </button>
+            <button
+              type="button"
+              onClick={() => sync.mutate()}
+              disabled={sync.isPending}
+              className="border border-neutral-400 bg-white px-6 py-3 text-sm hover:border-black disabled:opacity-50"
+            >
+              {sync.isPending ? "Memeriksa..." : "Periksa status pembayaran"}
+            </button>
+          </div>
+          {payError && (
+            <p role="alert" className="mt-3 text-red-600">
+              {payError}
+            </p>
+          )}
+          {sync.isError && !payError && (
+            <p role="alert" className="mt-3 text-red-600">
+              Gagal memeriksa status pembayaran. Coba lagi.
+            </p>
+          )}
+          {watching && (
+            <p className="mt-3 text-xs text-orange-800">Menunggu konfirmasi pembayaran...</p>
+          )}
+        </div>
+      )}
+
+      {o.status === "PAID" && (
+        <div className="mt-6 border border-green-200 bg-green-50 p-4 text-sm text-green-900" role="status">
+          <p className="font-medium">Pembayaran diterima. Terima kasih!</p>
+          <p className="mt-1">Pesananmu akan segera diproses.</p>
+        </div>
+      )}
+
+      {(o.status === "EXPIRED" || o.status === "CANCELLED") && (
+        <div className="mt-6 border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-700">
+          Pesanan ini sudah tidak aktif. Silakan buat pesanan baru dari keranjang.
         </div>
       )}
 
