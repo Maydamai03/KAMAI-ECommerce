@@ -54,7 +54,7 @@ model Address {
   userId        String
   recipientName String
   phone         String
-  areaId        String
+  areaId        String?
   province      String
   city          String
   district      String
