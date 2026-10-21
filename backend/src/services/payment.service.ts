@@ -324,25 +324,35 @@ export async function handleNotification(payload: z.infer<typeof notificationSch
 /* Sinkronisasi: tanya langsung ke Midtrans                             */
 /* ------------------------------------------------------------------ */
 
-export async function syncPayment(orderNumber: string, viewer: Viewer, email?: string) {
-  await findOrderForViewer(orderNumber, viewer, email); // pengecekan akses
-
+async function fetchMidtransStatus(orderNumber: string): Promise<MidtransStatus | null> {
   const result = await midtransFetch(
     `${midtrans.apiBase}/v2/${encodeURIComponent(orderNumber)}/status`
   );
   const json = result.json;
 
   if (json && typeof json.transaction_status === "string") {
-    await applyTransactionStatus(orderNumber, {
+    return {
       ...json,
       order_id: orderNumber,
       transaction_status: json.transaction_status,
-    } as MidtransStatus);
-  } else if (json?.status_code !== "404") {
-    // 404 artinya pembeli belum memilih metode bayar; selain itu dianggap masalah
-    console.error("[midtrans] respons status tidak dikenali:", result.status, json);
-    throw gatewayError();
+    } as MidtransStatus;
   }
 
+  // 404 artinya pembeli belum memilih metode bayar (belum ada transaksi)
+  if (json?.status_code === "404") return null;
+
+  console.error("[midtrans] respons status tidak dikenali:", result.status, json);
+  throw gatewayError();
+}
+
+/** Dipakai job: samakan status pesanan dengan Midtrans, tanpa pengecekan akses */
+export async function reconcilePayment(orderNumber: string) {
+  const data = await fetchMidtransStatus(orderNumber);
+  if (data) await applyTransactionStatus(orderNumber, data);
+}
+
+export async function syncPayment(orderNumber: string, viewer: Viewer, email?: string) {
+  await findOrderForViewer(orderNumber, viewer, email); // pengecekan akses
+  await reconcilePayment(orderNumber);
   return getOrderForViewer(orderNumber, viewer, email);
 }

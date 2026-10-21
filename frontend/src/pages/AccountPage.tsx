@@ -1,11 +1,17 @@
 import { useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useAddresses } from "../hooks/useAddresses";
 import AddressForm from "../components/AddressForm";
 import { addressToInput, toAddressInput } from "../lib/address";
 import { ApiError } from "../lib/api";
 import type { Address } from "../types";
+
+import { useQuery } from "@tanstack/react-query";
+import Pagination from "../components/Pagination";
+import { getMyOrders } from "../services/orders";
+import { formatDateTime, formatRupiah } from "../lib/format";
+import { STATUS_LABEL, STATUS_STYLE } from "../lib/orderStatus";
 
 type Mode = { type: "closed" } | { type: "new" } | { type: "edit"; address: Address };
 
@@ -14,6 +20,14 @@ export default function AccountPage() {
   const { list, create, update, remove } = useAddresses(Boolean(user));
   const [mode, setMode] = useState<Mode>({ type: "closed" });
   const [actionError, setActionError] = useState<string | null>(null);
+
+  const [ordersPage, setOrdersPage] = useState(1);
+  const myOrders = useQuery({
+    queryKey: ["my-orders", user?.id ?? null, ordersPage],
+    queryFn: () => getMyOrders(ordersPage),
+    enabled: Boolean(user),
+    staleTime: 0, // selalu segar saat halaman dibuka
+  });
 
   if (isLoading) {
     return <div className="mx-auto max-w-3xl px-4 py-12 text-sm text-neutral-500">Memuat...</div>;
@@ -159,11 +173,57 @@ export default function AccountPage() {
         </ul>
       </section>
 
-      <section className="mt-10">
+            <section className="mt-10">
         <h2 className="text-xl font-bold">Riwayat Pesanan</h2>
-        <p className="mt-3 text-sm text-neutral-500">
-          Pesananmu akan muncul di sini setelah fitur checkout aktif.
-        </p>
+
+        {myOrders.isLoading && <p className="mt-4 text-sm text-neutral-500">Memuat pesanan...</p>}
+        {myOrders.isError && (
+          <p className="mt-4 text-sm text-red-600">Gagal memuat riwayat pesanan.</p>
+        )}
+
+        {myOrders.data && myOrders.data.items.length === 0 && (
+          <div className="mt-4 text-sm text-neutral-500">
+            <p>Belum ada pesanan.</p>
+            <Link to="/products" className="mt-2 inline-block underline">
+              Mulai belanja
+            </Link>
+          </div>
+        )}
+
+        <ul className="mt-4 space-y-3">
+          {myOrders.data?.items.map((o) => (
+            <li key={o.orderNumber}>
+              <Link
+                to={`/orders/${o.orderNumber}`}
+                className="block border border-neutral-200 p-4 text-sm hover:border-black"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-medium">{o.orderNumber}</span>
+                  <span className={`px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[o.status]}`}>
+                    {STATUS_LABEL[o.status]}
+                  </span>
+                </div>
+                <p className="mt-1 text-neutral-500">{formatDateTime(o.createdAt)}</p>
+                <p className="mt-2">
+                  {o.preview.join(", ")}
+                  {o.preview.length < o.itemCount && o.preview.length > 0 ? ", ..." : ""}
+                </p>
+                <div className="mt-2 flex justify-between">
+                  <span className="text-neutral-500">{o.itemCount} item</span>
+                  <span className="font-semibold">{formatRupiah(o.total)}</span>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+
+        {myOrders.data && (
+          <Pagination
+            page={myOrders.data.pagination.page}
+            totalPages={myOrders.data.pagination.totalPages}
+            onChange={setOrdersPage}
+          />
+        )}
       </section>
     </div>
   );

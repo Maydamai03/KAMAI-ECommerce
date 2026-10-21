@@ -284,3 +284,41 @@ export async function getOrderForViewer(
 ) {
   return toOrderView(await findOrderForViewer(orderNumber, viewer, email));
 }
+
+export async function listOrdersForUser(userId: string, page: number, limit: number) {
+  const where = { userId };
+
+  const [total, rows] = await prisma.$transaction([
+    prisma.order.count({ where }),
+    prisma.order.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+      include: {
+        items: {
+          select: { productName: true, quantity: true },
+          orderBy: { productName: "asc" },
+        },
+      },
+    }),
+  ]);
+
+  return {
+    items: rows.map((o) => ({
+      orderNumber: o.orderNumber,
+      status: o.status,
+      total: o.total,
+      createdAt: o.createdAt,
+      expiresAt: o.expiresAt,
+      itemCount: o.items.reduce((sum, i) => sum + i.quantity, 0),
+      preview: [...new Set(o.items.map((i) => i.productName))].slice(0, 2),
+    })),
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    },
+  };
+}

@@ -163,3 +163,13 @@ export interface Order {
   shippingAddress: OrderShippingAddress;
   items: OrderItemView[];
 }
+
+export interface OrderSummary {
+  orderNumber: string;
+  status: OrderStatus;
+  total: number;
+  createdAt: string;
+  expiresAt: string;
+  itemCount: number;
+  preview: string[];
+}

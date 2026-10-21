@@ -10,6 +10,8 @@ import { cartRouter } from "./routes/cart.routes";
 import { meRouter } from "./routes/me.routes";
 import { orderRouter } from "./routes/order.routes";
 import { paymentRouter } from "./routes/payment.routes";
+import { startExpiryJob } from "./jobs/expireOrders";
+
 
 const app = express();
 // Diperlukan agar IP asli terbaca di belakang ngrok/hosting (untuk rate limit)
@@ -43,4 +45,5 @@ app.use(errorHandler);
 const port = Number(process.env.PORT ?? 5000);
 app.listen(port, () => {
   console.log(`API berjalan di http://localhost:${port}`);
+  startExpiryJob();
 });

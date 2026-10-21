@@ -1,5 +1,5 @@
 import { apiGet, apiPost } from "../lib/api";
-import type { AddressInput, Order } from "../types";
+import type { AddressInput, Order, OrderSummary, Pagination } from "../types";
 
 export interface CreateOrderInput {
   items: { variantId: string; quantity: number }[];
@@ -19,3 +19,6 @@ export const payOrder = (orderNumber: string, email?: string) =>
 
 export const syncOrder = (orderNumber: string, email?: string) =>
   apiPost<Order>(`/orders/${orderNumber}/sync`, { email });
+
+export const getMyOrders = (page: number) =>
+  apiGet<{ items: OrderSummary[]; pagination: Pagination }>("/me/orders", { page, limit: 5 });

@@ -8,6 +8,8 @@ import {
   listAddresses,
   updateAddress,
 } from "../services/address.service";
+import { z } from "zod";
+import { listOrdersForUser } from "../services/order.service";
 
 type Handler = (req: Request, res: Response) => Promise<void>;
 
@@ -53,3 +55,17 @@ meRouter.delete(
     res.json({ success: true, data: null });
   })
 );
+
+const ordersQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(20).default(10),
+});
+
+meRouter.get(
+  "/orders",
+  wrap(async (req, res) => {
+    const query = ordersQuerySchema.parse(req.query);
+    const data = await listOrdersForUser(req.user!.id, query.page, query.limit);
+    res.json({ success: true, data });
+  })
+);  
