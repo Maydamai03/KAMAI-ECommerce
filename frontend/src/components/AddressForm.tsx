@@ -2,7 +2,8 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { ApiError } from "../lib/api";
-import type { AddressFormValues } from "../types";
+import AreaPicker from "./AreaPicker";
+import type { AddressFormValues, ShippingArea } from "../types";
 
 interface Props {
   defaultValues?: Partial<AddressFormValues>;
@@ -54,6 +55,8 @@ export default function AddressForm({
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<AddressFormValues>({
     defaultValues: {
@@ -63,6 +66,7 @@ export default function AddressForm({
       city: "",
       district: "",
       postalCode: "",
+      areaId: "",
       street: "",
       note: "",
       isDefault: false,
@@ -70,6 +74,25 @@ export default function AddressForm({
       ...defaultValues,
     },
   });
+
+  const areaId = watch("areaId");
+  const district = watch("district");
+  const city = watch("city");
+  const province = watch("province");
+  // const postalCode = watch("postalCode");
+
+  const hasLocation = Boolean(district && city && province);
+  const areaLabel = hasLocation ? `${district}, ${city}, ${province}` : null;
+
+    function handleArea(area: ShippingArea) {
+    setValue("areaId", area.id, { shouldValidate: true, shouldDirty: true });
+    setValue("province", area.province, { shouldDirty: true });
+    setValue("city", area.city, { shouldDirty: true });
+    setValue("district", area.district, { shouldDirty: true });
+    if (area.postalCode) {
+      setValue("postalCode", area.postalCode, { shouldValidate: true, shouldDirty: true });
+    }
+  }
 
   async function submit(values: AddressFormValues) {
     setServerError(null);
@@ -128,46 +151,53 @@ export default function AddressForm({
         </Field>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Provinsi" htmlFor="province" error={errors.province?.message}>
-          <input
-            id="province"
-            className={inputClass}
-            {...register("province", { required: "Provinsi wajib diisi" })}
-          />
-        </Field>
+      {/* Area: dipilih lewat pencarian, mengisi provinsi, kota, kecamatan, dan kode pos */}
+      <input type="hidden" {...register("province")} />
+      <input type="hidden" {...register("city")} />
+      <input type="hidden" {...register("district")} />
+      <input
+        type="hidden"
+        {...register("areaId", { required: "Cari dan pilih kecamatan atau kota tujuan" })}
+      />
 
-        <Field label="Kota/Kabupaten" htmlFor="city" error={errors.city?.message}>
-          <input
-            id="city"
-            className={inputClass}
-            {...register("city", { required: "Kota wajib diisi" })}
-          />
-        </Field>
+      <div>
+        <label htmlFor="area-search" className="mb-1 block text-sm font-medium">
+          Kecamatan / Kota
+        </label>
 
-        <Field label="Kecamatan" htmlFor="district" error={errors.district?.message}>
-          <input
-            id="district"
-            className={inputClass}
-            {...register("district", { required: "Kecamatan wajib diisi" })}
-          />
-        </Field>
+        {areaLabel && (
+          <p
+            className={`mb-2 border px-3 py-2 text-sm ${
+              areaId ? "border-black" : "border-orange-300 bg-orange-50"
+            }`}
+          >
+            {areaId ? "\u2713 " : ""}
+            {areaLabel}
+          </p>
+        )}
+        {hasLocation && !areaId && (
+          <p className="mb-2 text-xs text-orange-700">
+            Alamat ini belum memiliki area. Cari dan pilih area di bawah agar ongkir akurat.
+          </p>
+        )}
 
-        <Field label="Kode pos" htmlFor="postalCode" error={errors.postalCode?.message}>
-          <input
-            id="postalCode"
-            inputMode="numeric"
-            maxLength={5}
-            autoComplete="postal-code"
-            className={inputClass}
-            {...register("postalCode", {
-              required: "Kode pos wajib diisi",
-              pattern: { value: /^\d{5}$/, message: "Kode pos harus 5 digit" },
-            })}
-          />
-        </Field>
+        <AreaPicker onSelect={handleArea} hasValue={hasLocation} />
+        {errors.areaId && <p className="mt-1 text-xs text-red-600">{errors.areaId.message}</p>}
       </div>
 
+            <Field label="Kode pos" htmlFor="postalCode" error={errors.postalCode?.message}>
+        <input
+          id="postalCode"
+          inputMode="numeric"
+          maxLength={5}
+          autoComplete="postal-code"
+          className={inputClass}
+          {...register("postalCode", {
+            required: "Kode pos wajib diisi",
+            pattern: { value: /^\d{5}$/, message: "Kode pos harus 5 digit" },
+          })}
+        />
+      </Field>
       <Field label="Alamat lengkap" htmlFor="street" error={errors.street?.message}>
         <textarea
           id="street"

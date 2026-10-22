@@ -110,6 +110,7 @@ export default function AccountPage() {
                 city: mode.address.city,
                 district: mode.address.district,
                 postalCode: mode.address.postalCode,
+                areaId: mode.address.areaId ?? "",
                 street: mode.address.street,
                 note: mode.address.note ?? "",
                 isDefault: mode.address.isDefault,

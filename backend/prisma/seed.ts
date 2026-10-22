@@ -1,6 +1,7 @@
 import "dotenv/config";
 import bcrypt from "bcrypt";
 import { prisma } from "../src/lib/prisma";
+import { buildDefaultManualConfig } from "../src/shipping/manual.config";
 
 const SIZES = ["S", "M", "L", "XL"];
 
@@ -95,6 +96,30 @@ async function main() {
     });
   }
 
+    // Alamat asal pengiriman (dapat diubah dari panel admin nanti)
+  await prisma.storeSetting.upsert({
+    where: { key: "shipping_origin" },
+    update: {},
+    create: {
+      key: "shipping_origin",
+      value: {
+        name: "Gudang Kamai (contoh)",
+        areaId: "MOCK-SBY-GUBENG",
+        postalCode: "60281",
+        address: "Jl. Contoh No. 1, Gubeng, Surabaya, Jawa Timur",
+        phone: "081234567890",
+      },
+    },
+  });
+  // Tarif ongkir manual (contoh; client menggantinya dengan tarif sebenarnya)
+  await prisma.storeSetting.upsert({
+    where: { key: "shipping_manual" },
+    update: {},
+    create: {
+      key: "shipping_manual",
+      value: JSON.parse(JSON.stringify(buildDefaultManualConfig())),
+    },
+  });
   console.log("Seed selesai.");
 }
 

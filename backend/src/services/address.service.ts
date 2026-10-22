@@ -14,6 +14,7 @@ export const addressSchema = z.object({
   city: z.string().trim().min(2).max(100),
   district: z.string().trim().min(2).max(100),
   postalCode: z.string().trim().regex(/^\d{5}$/, "Kode pos harus 5 digit"),
+  areaId: z.string().trim().max(100).optional(),
   street: z.string().trim().min(5, "Alamat minimal 5 karakter").max(300),
   note: z.string().trim().max(200).optional(),
   isDefault: z.boolean().optional(),

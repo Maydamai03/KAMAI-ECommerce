@@ -94,6 +94,7 @@ export interface Address {
   street: string;
   note: string | null;
   isDefault: boolean;
+  areaId: string | null;
 }
 
 export interface AddressInput {
@@ -106,6 +107,7 @@ export interface AddressInput {
   street: string;
   note?: string;
   isDefault?: boolean;
+  areaId?: string;
 }
 
 export interface AddressFormValues {
@@ -119,6 +121,7 @@ export interface AddressFormValues {
   note: string;
   isDefault: boolean;
   email: string;
+  areaId: string;
 }
 
 export type OrderStatus =
@@ -156,6 +159,8 @@ export interface Order {
   subtotal: number;
   shippingCost: number;
   total: number;
+  courierCompany: string | null;
+  courierService: string | null;
   expiresAt: string;
   createdAt: string;
   email: string | null;
@@ -172,4 +177,29 @@ export interface OrderSummary {
   expiresAt: string;
   itemCount: number;
   preview: string[];
+}
+
+export interface ShippingArea {
+  id: string;
+  label: string;
+  province: string;
+  city: string;
+  district: string;
+  postalCode: string;
+}
+
+export interface ShippingRate {
+  courierCode: string;
+  courierName: string;
+  serviceCode: string;
+  serviceName: string;
+  description: string;
+  price: number;
+  etdMinDays: number;
+  etdMaxDays: number;
+}
+
+export interface ShippingRatesResponse {
+  weightGram: number;
+  rates: ShippingRate[];
 }

@@ -12,3 +12,7 @@ export function formatDateTime(iso: string): string {
     timeStyle: "short",
   }).format(new Date(iso));
 }
+
+export function formatEtd(min: number, max: number): string {
+  return min === max ? `${min} hari` : `${min}-${max} hari`;
+}

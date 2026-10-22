@@ -11,7 +11,7 @@ import { meRouter } from "./routes/me.routes";
 import { orderRouter } from "./routes/order.routes";
 import { paymentRouter } from "./routes/payment.routes";
 import { startExpiryJob } from "./jobs/expireOrders";
-
+import { shippingRouter } from "./routes/shipping.routes";
 
 const app = express();
 // Diperlukan agar IP asli terbaca di belakang ngrok/hosting (untuk rate limit)
@@ -37,6 +37,7 @@ app.use("/api", catalogRouter);
 app.use("/api", cartRouter);
 app.use("/api", orderRouter);
 app.use("/api", paymentRouter);
+app.use("/api", shippingRouter);
 
 // Harus paling bawah
 app.use("/api", notFoundHandler);
