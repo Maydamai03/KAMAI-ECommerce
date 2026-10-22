@@ -33,3 +33,21 @@ export const requireAdmin: RequestHandler = (req, _res, next) => {
   }
   next();
 };
+
+// Tidak menolak tamu; hanya mengisi req.user kalau cookie valid
+export const optionalAuth: RequestHandler = async (req, _res, next) => {
+  try {
+    const token = req.cookies?.[COOKIE_NAME];
+    const payload = token ? verifyToken(token) : null;
+    if (payload) {
+      const user = await prisma.user.findUnique({
+        where: { id: payload.sub },
+        select: { id: true, name: true, email: true, phone: true, role: true },
+      });
+      if (user) req.user = user;
+    }
+    next();
+  } catch (e) {
+    next(e);
+  }
+};

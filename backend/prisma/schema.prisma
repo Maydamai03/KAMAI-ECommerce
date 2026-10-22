@@ -50,18 +50,19 @@ model User {
 }
 
 model Address {
-  id            String  @id @default(cuid())
+  id            String   @id @default(cuid())
   userId        String
   recipientName String
   phone         String
-  areaId        String
+  areaId        String?
   province      String
   city          String
   district      String
   postalCode    String
   street        String
   note          String?
-  isDefault     Boolean @default(false)
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -183,13 +184,15 @@ model Payment {
   method      String?
   status      PaymentStatus @default(PENDING)
   grossAmount Int
+  snapToken   String?
+  redirectUrl String?
   paidAt      DateTime?
   rawPayload  Json?
   createdAt   DateTime      @default(now())
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  @@index([orderId])
+  @@unique([orderId, provider])
 }
 
 model Shipment {
