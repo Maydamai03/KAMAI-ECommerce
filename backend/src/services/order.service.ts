@@ -9,6 +9,8 @@ import {
   MAX_QTY_PER_LINE,
   ORDER_EXPIRY_HOURS,
 } from "../config/order";
+import { resolveShippingRate } from "./shipping.service";
+
 
 const guestAddressSchema = addressSchema.omit({ isDefault: true });
 
@@ -26,6 +28,13 @@ export const createOrderSchema = z.object({
   address: guestAddressSchema.optional(), // tamu
   email: z.string().trim().toLowerCase().email().optional(), // tamu
   notes: z.string().trim().max(300).optional(),
+  shipping: z
+    .object({
+      courierCode: z.string().trim().min(1).max(30),
+      serviceCode: z.string().trim().min(1).max(60),
+      expectedCost: z.number().int().min(0).optional(),
+    })
+    .optional(),
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
@@ -39,6 +48,7 @@ type AddressSnapshot = {
   postalCode: string;
   street: string;
   note: string | null;
+  areaId: string | null;
 };
 
 const orderInclude = {
@@ -64,6 +74,8 @@ function toOrderView(order: OrderRecord) {
     status: order.status,
     subtotal: order.subtotal,
     shippingCost: order.shippingCost,
+    courierCompany: order.courierCompany,
+    courierService: order.courierService,
     total: order.total,
     expiresAt: order.expiresAt,
     createdAt: order.createdAt,
@@ -107,6 +119,7 @@ export async function createOrder(
       postalCode: saved.postalCode,
       street: saved.street,
       note: saved.note,
+      areaId: saved.areaId,
     };
     email = user.email;
   } else {
@@ -122,6 +135,7 @@ export async function createOrder(
       postalCode: input.address.postalCode,
       street: input.address.street,
       note: input.address.note || null,
+      areaId: input.address.areaId ?? null,
     };
     email = input.email;
   }
@@ -138,6 +152,38 @@ export async function createOrder(
   }
   // Urutan tetap mencegah deadlock saat dua pesanan memperbarui varian yang sama
   const variantIds = [...merged.keys()].sort();
+    // Ongkir: dihitung di server, di luar transaksi database
+  let shippingCost = FLAT_SHIPPING_COST; // SEMENTARA: dihapus di tahap 4B
+  let courier: { name: string; service: string } | null = null;
+
+  if (input.shipping) {
+    const found = await prisma.productVariant.findMany({
+      where: { id: { in: variantIds } },
+      select: { id: true, product: { select: { weightGram: true } } },
+    });
+    const weightGram = found.reduce(
+      (sum, v) => sum + v.product.weightGram * (merged.get(v.id) ?? 0),
+      0
+    );
+
+    const rate = await resolveShippingRate(
+      input.shipping,
+      { areaId: address.areaId ?? undefined, postalCode: address.postalCode },
+      weightGram
+    );
+
+    if (input.shipping.expectedCost !== undefined && input.shipping.expectedCost !== rate.price) {
+      throw new AppError(
+        409,
+        "SHIPPING_CHANGED",
+        "Tarif pengiriman berubah. Silakan periksa kembali.",
+        { newCost: rate.price }
+      );
+    }
+
+    shippingCost = rate.price;
+    courier = { name: rate.courierName, service: rate.serviceName };
+  }
 
   // 3. Transaksi. Diulang kalau nomor pesanan kebetulan bentrok (sangat jarang)
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -204,7 +250,7 @@ export async function createOrder(
         }
 
         const subtotal = lines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
-        const shippingCost = FLAT_SHIPPING_COST;
+        // const shippingCost = FLAT_SHIPPING_COST;
 
         const order = await tx.order.create({
           data: {
@@ -217,6 +263,8 @@ export async function createOrder(
             shippingCost,
             total: subtotal + shippingCost,
             shippingAddress: address,
+            courierCompany: courier?.name ?? null,
+            courierService: courier?.service ?? null,
             expiresAt: new Date(Date.now() + ORDER_EXPIRY_HOURS * 60 * 60 * 1000),
             notes: input.notes || null,
             items: {

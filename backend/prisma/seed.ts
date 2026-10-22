@@ -95,6 +95,22 @@ async function main() {
     });
   }
 
+    // Alamat asal pengiriman (dapat diubah dari panel admin nanti)
+  await prisma.storeSetting.upsert({
+    where: { key: "shipping_origin" },
+    update: {},
+    create: {
+      key: "shipping_origin",
+      value: {
+        name: "Gudang Kamai (contoh)",
+        areaId: "MOCK-SBY-GUBENG",
+        postalCode: "60281",
+        address: "Jl. Contoh No. 1, Gubeng, Surabaya, Jawa Timur",
+        phone: "081234567890",
+      },
+    },
+  });
+
   console.log("Seed selesai.");
 }
 
