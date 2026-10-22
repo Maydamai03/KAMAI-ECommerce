@@ -9,6 +9,7 @@ import {
 } from "../services/order.service";
 import { z } from "zod";
 import { createPayment, syncPayment } from "../services/payment.service";
+import { notifyOrderCreated } from "../services/notification.service";
 
 type Handler = (req: Request, res: Response) => Promise<void>;
 
@@ -40,6 +41,7 @@ orderRouter.post(
       input,
       req.user ? { id: req.user.id, email: req.user.email } : undefined
     );
+    void notifyOrderCreated(data.orderNumber); // di belakang layar, tidak ditunggu
     res.status(201).json({ success: true, data });
   })
 );

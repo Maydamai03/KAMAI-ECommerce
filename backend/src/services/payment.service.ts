@@ -12,6 +12,7 @@ import {
   reserveStock,
   transitionOrder,
 } from "./order-status";
+import { notifyPaymentReceived } from "./notification.service";
 
 type Viewer = { id: string; role: string } | undefined;
 
@@ -251,8 +252,7 @@ export async function applyTransactionStatus(orderNumber: string, data: Midtrans
 
   // Perubahan status pesanan (idempoten: hanya berubah dari status yang sesuai)
   try {
-    return await prisma.$transaction(async (tx) => {
-      if (isPaid) {
+    const outcome = await prisma.$transaction(async (tx) => {      if (isPaid) {
         const paid = await transitionOrder(
           tx,
           order.id,
@@ -288,8 +288,15 @@ export async function applyTransactionStatus(orderNumber: string, data: Midtrans
       }
 
       // pending, deny, failure, dan lainnya: hanya dicatat, pesanan tetap
+            // pending, deny, failure, dan lainnya: hanya dicatat, pesanan tetap
       return "recorded";
     });
+
+    // Email hanya dikirim saat status benar-benar berubah menjadi PAID (sekali saja)
+    if (outcome === "paid" || outcome === "paid_late") {
+      void notifyPaymentReceived(orderNumber);
+    }
+    return outcome;
   } catch (e) {
     if (e instanceof StockUnavailableError) {
       const current = await prisma.order.findUnique({
