@@ -290,6 +290,11 @@ export default function OrderPage() {
           {a.district}, {a.city}, {a.province} {a.postalCode}
         </p>
         {a.note && <p className="mt-1 text-xs text-neutral-500">Catatan: {a.note}</p>}
+        {o.courierCompany && (
+          <p className="mt-2 text-xs text-neutral-500">
+            Kurir: {o.courierCompany} {o.courierService}
+          </p>
+        )}
       </section>
 
       <Link to="/products" className="mt-10 inline-block text-sm underline">

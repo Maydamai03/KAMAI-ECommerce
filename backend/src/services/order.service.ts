@@ -5,7 +5,6 @@ import { prisma } from "../lib/prisma";
 import { AppError } from "../lib/errors";
 import { addressSchema } from "./address.service";
 import {
-  FLAT_SHIPPING_COST,
   MAX_QTY_PER_LINE,
   ORDER_EXPIRY_HOURS,
 } from "../config/order";
@@ -32,9 +31,8 @@ export const createOrderSchema = z.object({
     .object({
       courierCode: z.string().trim().min(1).max(30),
       serviceCode: z.string().trim().min(1).max(60),
-      expectedCost: z.number().int().min(0).optional(),
+      expectedCost: z.number().int().min(0),
     })
-    .optional(),
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
@@ -152,38 +150,33 @@ export async function createOrder(
   }
   // Urutan tetap mencegah deadlock saat dua pesanan memperbarui varian yang sama
   const variantIds = [...merged.keys()].sort();
-    // Ongkir: dihitung di server, di luar transaksi database
-  let shippingCost = FLAT_SHIPPING_COST; // SEMENTARA: dihapus di tahap 4B
-  let courier: { name: string; service: string } | null = null;
+      // Ongkir: dihitung di server, di luar transaksi database
+  const found = await prisma.productVariant.findMany({
+    where: { id: { in: variantIds } },
+    select: { id: true, product: { select: { weightGram: true } } },
+  });
+  const weightGram = found.reduce(
+    (sum, v) => sum + v.product.weightGram * (merged.get(v.id) ?? 0),
+    0
+  );
 
-  if (input.shipping) {
-    const found = await prisma.productVariant.findMany({
-      where: { id: { in: variantIds } },
-      select: { id: true, product: { select: { weightGram: true } } },
-    });
-    const weightGram = found.reduce(
-      (sum, v) => sum + v.product.weightGram * (merged.get(v.id) ?? 0),
-      0
+  const rate = await resolveShippingRate(
+    input.shipping,
+    { areaId: address.areaId ?? undefined, postalCode: address.postalCode },
+    weightGram
+  );
+
+  if (input.shipping.expectedCost !== rate.price) {
+    throw new AppError(
+      409,
+      "SHIPPING_CHANGED",
+      "Tarif pengiriman berubah. Silakan periksa kembali.",
+      { newCost: rate.price }
     );
-
-    const rate = await resolveShippingRate(
-      input.shipping,
-      { areaId: address.areaId ?? undefined, postalCode: address.postalCode },
-      weightGram
-    );
-
-    if (input.shipping.expectedCost !== undefined && input.shipping.expectedCost !== rate.price) {
-      throw new AppError(
-        409,
-        "SHIPPING_CHANGED",
-        "Tarif pengiriman berubah. Silakan periksa kembali.",
-        { newCost: rate.price }
-      );
-    }
-
-    shippingCost = rate.price;
-    courier = { name: rate.courierName, service: rate.serviceName };
   }
+
+  const shippingCost = rate.price;
+  const courier = { name: rate.courierName, service: rate.serviceName };
 
   // 3. Transaksi. Diulang kalau nomor pesanan kebetulan bentrok (sangat jarang)
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -263,8 +256,8 @@ export async function createOrder(
             shippingCost,
             total: subtotal + shippingCost,
             shippingAddress: address,
-            courierCompany: courier?.name ?? null,
-            courierService: courier?.service ?? null,
+            courierCompany: courier.name,
+            courierService: courier.service,
             expiresAt: new Date(Date.now() + ORDER_EXPIRY_HOURS * 60 * 60 * 1000),
             notes: input.notes || null,
             items: {

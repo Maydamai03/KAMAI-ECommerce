@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../hooks/useAuth";
 import { useAddresses } from "../hooks/useAddresses";
 import { useCartLines } from "../hooks/useCartLines";
@@ -8,10 +8,10 @@ import { useCartStore } from "../store/cart";
 import AddressForm from "../components/AddressForm";
 import { toAddressInput } from "../lib/address";
 import { ApiError } from "../lib/api";
-import { TEMP_SHIPPING_COST } from "../lib/constants";
-import { formatRupiah } from "../lib/format";
+import { formatEtd, formatRupiah } from "../lib/format";
 import { rememberOrderEmail } from "../lib/orderEmail";
 import { createOrder } from "../services/orders";
+import { getShippingRates } from "../services/shipping";
 import type { AddressFormValues } from "../types";
 
 export default function CheckoutPage() {
@@ -28,7 +28,48 @@ export default function CheckoutPage() {
   const [adding, setAdding] = useState(false);
   const [guest, setGuest] = useState<AddressFormValues | null>(null);
   const [editingGuest, setEditingGuest] = useState(true);
+  const [selectedRateKey, setSelectedRateKey] = useState<string | null>(null);
   const [orderError, setOrderError] = useState<string | null>(null);
+
+  const addresses = list.data ?? [];
+  const effectiveId =
+    selectedId ?? addresses.find((a) => a.isDefault)?.id ?? addresses[0]?.id ?? null;
+  const selectedAddress = addresses.find((a) => a.id === effectiveId) ?? null;
+  const showNewForm = adding || (list.isSuccess && addresses.length === 0);
+
+  const addressReady = user ? Boolean(selectedAddress) : Boolean(guest) && !editingGuest;
+
+  // Tujuan pengiriman untuk menghitung ongkir
+  const destination = user
+    ? selectedAddress
+      ? { areaId: selectedAddress.areaId ?? undefined, postalCode: selectedAddress.postalCode }
+      : null
+    : guest && !editingGuest
+      ? { areaId: guest.areaId || undefined, postalCode: guest.postalCode }
+      : null;
+
+  const cartKey = cartItems.map((i) => `${i.variantId}:${i.quantity}`).join(",");
+  const ratesQuery = useQuery({
+    queryKey: ["shipping-rates", cartKey, destination?.areaId ?? "", destination?.postalCode ?? ""],
+    queryFn: () =>
+      getShippingRates({
+        items: cartItems,
+        areaId: destination?.areaId,
+        postalCode: destination!.postalCode,
+      }),
+    enabled: Boolean(destination) && cart.canCheckout,
+    staleTime: 60_000,
+    retry: false,
+  });
+
+  const rates = ratesQuery.data?.rates ?? [];
+  // Pilihan pembeli bila masih berlaku; kalau tidak, layanan termurah
+  const effectiveRate =
+    rates.find((r) => `${r.courierCode}:${r.serviceCode}` === selectedRateKey) ?? rates[0] ?? null;
+
+  const shippingCost = effectiveRate?.price ?? 0;
+  const readyToOrder =
+    cart.canCheckout && addressReady && Boolean(effectiveRate) && !ratesQuery.isFetching;
 
   if (cart.lines.length === 0) {
     return (
@@ -41,26 +82,23 @@ export default function CheckoutPage() {
     );
   }
 
-  const addresses = list.data ?? [];
-  const effectiveId =
-    selectedId ?? addresses.find((a) => a.isDefault)?.id ?? addresses[0]?.id ?? null;
-  const selectedAddress = addresses.find((a) => a.id === effectiveId) ?? null;
-  const showNewForm = adding || (list.isSuccess && addresses.length === 0);
-
-  const addressReady = user ? Boolean(selectedAddress) : Boolean(guest) && !editingGuest;
-  const readyToOrder = cart.canCheckout && addressReady;
-
   async function handlePlaceOrder() {
-    if (!readyToOrder || placeOrder.isPending) return;
+    if (!readyToOrder || !effectiveRate || placeOrder.isPending) return;
     setOrderError(null);
 
     const items = cartItems.map((i) => ({ variantId: i.variantId, quantity: i.quantity }));
+    const shipping = {
+      courierCode: effectiveRate.courierCode,
+      serviceCode: effectiveRate.serviceCode,
+      expectedCost: effectiveRate.price,
+    };
     const payload = user
-      ? { items, addressId: selectedAddress?.id }
+      ? { items, addressId: selectedAddress?.id, shipping }
       : {
           items,
           email: guest?.email,
           address: guest ? toAddressInput(guest) : undefined,
+          shipping,
         };
 
     try {
@@ -79,9 +117,16 @@ export default function CheckoutPage() {
     } catch (e) {
       if (e instanceof ApiError && e.code === "CART_INVALID") {
         queryClient.invalidateQueries({ queryKey: ["cart-validate"] });
+        queryClient.invalidateQueries({ queryKey: ["shipping-rates"] });
         setOrderError(
           "Stok atau ketersediaan item berubah. Keranjang sudah diperbarui, silakan periksa kembali."
         );
+      } else if (e instanceof ApiError && e.code === "SHIPPING_CHANGED") {
+        queryClient.invalidateQueries({ queryKey: ["shipping-rates"] });
+        setOrderError("Tarif pengiriman berubah. Harga terbaru sudah ditampilkan, silakan periksa lalu coba lagi.");
+      } else if (e instanceof ApiError && e.code === "SHIPPING_UNAVAILABLE") {
+        queryClient.invalidateQueries({ queryKey: ["shipping-rates"] });
+        setOrderError("Layanan kurir yang dipilih tidak tersedia lagi. Silakan pilih kurir lain.");
       } else {
         setOrderError(e instanceof ApiError ? e.message : "Gagal membuat pesanan. Coba lagi.");
       }
@@ -216,16 +261,90 @@ export default function CheckoutPage() {
 
           <section className="border-t border-neutral-200 pt-6">
             <h2 className="text-xl font-bold">2. Pengiriman</h2>
-            <p className="mt-2 text-sm text-neutral-600">
-              Sementara memakai tarif tetap {formatRupiah(TEMP_SHIPPING_COST)}. Pilihan kurir dan
-              ongkos kirim otomatis tersedia di tahap berikutnya.
-            </p>
+
+            {!destination && (
+              <p className="mt-2 text-sm text-neutral-500">
+                Pilih alamat pengiriman untuk melihat pilihan kurir dan ongkos kirim.
+              </p>
+            )}
+
+            {destination && !destination.areaId && (
+              <p className="mt-2 text-xs text-orange-700">
+                Alamat ini belum memiliki area terpilih, jadi ongkir dihitung dari kode pos. Ubah alamat di
+                halaman Akun untuk hasil yang lebih akurat.
+              </p>
+            )}
+
+            {destination && ratesQuery.isLoading && (
+              <p className="mt-3 text-sm text-neutral-500">Menghitung ongkos kirim...</p>
+            )}
+
+            {ratesQuery.isError && (
+              <div className="mt-3 text-sm text-red-600">
+                Gagal memuat tarif pengiriman.{" "}
+                <button type="button" onClick={() => ratesQuery.refetch()} className="underline">
+                  Coba lagi
+                </button>
+              </div>
+            )}
+
+            {ratesQuery.data && rates.length === 0 && (
+              <p className="mt-3 text-sm text-neutral-600">
+                Belum ada layanan pengiriman untuk alamat ini.
+              </p>
+            )}
+
+            {rates.length > 0 && (
+              <>
+                <ul className="mt-4 space-y-3">
+                  {rates.map((r) => {
+                    const key = `${r.courierCode}:${r.serviceCode}`;
+                    const active = effectiveRate
+                      ? effectiveRate.courierCode === r.courierCode &&
+                        effectiveRate.serviceCode === r.serviceCode
+                      : false;
+                    return (
+                      <li key={key}>
+                        <label
+                          className={`flex cursor-pointer items-start justify-between gap-3 border p-4 text-sm ${
+                            active ? "border-black" : "border-neutral-200"
+                          }`}
+                        >
+                          <span className="flex gap-3">
+                            <input
+                              type="radio"
+                              name="shipping"
+                              checked={active}
+                              onChange={() => setSelectedRateKey(key)}
+                              className="mt-1"
+                            />
+                            <span>
+                              <span className="font-medium">
+                                {r.courierName} {r.serviceName}
+                              </span>
+                              <span className="block text-xs text-neutral-500">{r.description}</span>
+                              <span className="block text-xs text-neutral-500">
+                                Estimasi {formatEtd(r.etdMinDays, r.etdMaxDays)}
+                              </span>
+                            </span>
+                          </span>
+                          <span className="font-semibold">{formatRupiah(r.price)}</span>
+                        </label>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <p className="mt-2 text-xs text-neutral-500">
+                  Berat total sekitar {ratesQuery.data?.weightGram} gram.
+                </p>
+              </>
+            )}
           </section>
 
           <section className="border-t border-neutral-200 pt-6">
             <h2 className="text-xl font-bold text-neutral-400">3. Pembayaran</h2>
             <p className="mt-2 text-sm text-neutral-400">
-              Pembayaran dilakukan setelah pesanan dibuat. Pembayaran online tersedia di tahap berikutnya.
+              Pembayaran dilakukan setelah pesanan dibuat, di halaman pesanan.
             </p>
           </section>
         </div>
@@ -263,18 +382,22 @@ export default function CheckoutPage() {
               <span>{formatRupiah(cart.subtotal)}</span>
             </div>
             <div className="flex justify-between">
-              <span>Ongkos kirim (sementara)</span>
-              <span>{formatRupiah(TEMP_SHIPPING_COST)}</span>
+              <span>
+                Ongkos kirim
+                {effectiveRate ? ` (${effectiveRate.courierName} ${effectiveRate.serviceName})` : ""}
+              </span>
+              <span>{effectiveRate ? formatRupiah(shippingCost) : "Pilih alamat dulu"}</span>
             </div>
             <div className="flex justify-between border-t border-neutral-200 pt-2 text-base font-bold">
               <span>Total</span>
-              <span>{formatRupiah(cart.subtotal + TEMP_SHIPPING_COST)}</span>
+              <span>{formatRupiah(cart.subtotal + shippingCost)}</span>
             </div>
           </div>
 
           <ul className="mt-5 space-y-1 text-xs text-neutral-600">
             <li>{cart.canCheckout ? "\u2713" : "\u25CB"} Item keranjang tersedia</li>
             <li>{addressReady ? "\u2713" : "\u25CB"} Alamat pengiriman dipilih</li>
+            <li>{effectiveRate ? "\u2713" : "\u25CB"} Kurir dipilih</li>
           </ul>
 
           {orderError && (

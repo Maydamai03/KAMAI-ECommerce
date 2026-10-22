@@ -21,6 +21,7 @@ async function loadEmailOrder(orderNumber: string): Promise<EmailOrder | null> {
     shippingCost: order.shippingCost,
     total: order.total,
     expiresAt: order.expiresAt,
+    courier: [order.courierCompany, order.courierService].filter(Boolean).join(" ") || null,
     address: order.shippingAddress as unknown as EmailOrder["address"],
     items: order.items.map((i) => ({
       productName: i.productName,

@@ -9,6 +9,7 @@ export function toAddressInput(v: AddressFormValues): AddressInput {
     district: v.district.trim(),
     postalCode: v.postalCode.trim(),
     street: v.street.trim(),
+    areaId: v.areaId || undefined,
     // Kolom kosong dikirim sebagai undefined, bukan string kosong
     note: v.note.trim() || undefined,
     isDefault: v.isDefault,
@@ -24,6 +25,7 @@ export function addressToInput(a: Address, isDefault = a.isDefault): AddressInpu
     district: a.district,
     postalCode: a.postalCode,
     street: a.street,
+    areaId: a.areaId ?? undefined,
     note: a.note ?? undefined,
     isDefault,
   };

@@ -18,6 +18,7 @@ export interface EmailOrder {
     note?: string | null;
   };
   items: { productName: string; variantLabel: string; unitPrice: number; quantity: number }[];
+  courier?: string | null;
 }
 
 /** Semua teks dari pengguna wajib lewat sini sebelum masuk ke HTML */
@@ -97,6 +98,7 @@ function render(order: EmailOrder, c: Content) {
             ${esc(a.recipientName)} &middot; ${esc(a.phone)}<br>
             ${esc(a.street)}<br>
             ${esc(a.district)}, ${esc(a.city)}, ${esc(a.province)} ${esc(a.postalCode)}
+            ${order.courier ? `<br><span style="color:#737373;">Kurir: ${esc(order.courier)}</span>` : ""}
             ${a.note ? `<br><span style="color:#737373;">Catatan: ${esc(a.note)}</span>` : ""}
           </p>
 
@@ -132,6 +134,7 @@ function render(order: EmailOrder, c: Content) {
     "",
     `Dikirim ke: ${a.recipientName}, ${a.phone}`,
     `${a.street}, ${a.district}, ${a.city}, ${a.province} ${a.postalCode}`,
+    ...(order.courier ? [`Kurir: ${order.courier}`] : []),
     "",
     `${c.buttonLabel}: ${link}`,
   ].join("\n");
