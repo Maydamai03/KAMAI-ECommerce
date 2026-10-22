@@ -79,19 +79,19 @@ export default function AddressForm({
   const district = watch("district");
   const city = watch("city");
   const province = watch("province");
-  const postalCode = watch("postalCode");
+  // const postalCode = watch("postalCode");
 
   const hasLocation = Boolean(district && city && province);
-  const areaLabel = hasLocation
-    ? `${district}, ${city}, ${province}${postalCode ? `. ${postalCode}` : ""}`
-    : null;
+  const areaLabel = hasLocation ? `${district}, ${city}, ${province}` : null;
 
-  function handleArea(area: ShippingArea) {
+    function handleArea(area: ShippingArea) {
     setValue("areaId", area.id, { shouldValidate: true, shouldDirty: true });
     setValue("province", area.province, { shouldDirty: true });
     setValue("city", area.city, { shouldDirty: true });
     setValue("district", area.district, { shouldDirty: true });
-    setValue("postalCode", area.postalCode, { shouldDirty: true });
+    if (area.postalCode) {
+      setValue("postalCode", area.postalCode, { shouldValidate: true, shouldDirty: true });
+    }
   }
 
   async function submit(values: AddressFormValues) {
@@ -155,7 +155,6 @@ export default function AddressForm({
       <input type="hidden" {...register("province")} />
       <input type="hidden" {...register("city")} />
       <input type="hidden" {...register("district")} />
-      <input type="hidden" {...register("postalCode")} />
       <input
         type="hidden"
         {...register("areaId", { required: "Cari dan pilih kecamatan atau kota tujuan" })}
@@ -186,6 +185,19 @@ export default function AddressForm({
         {errors.areaId && <p className="mt-1 text-xs text-red-600">{errors.areaId.message}</p>}
       </div>
 
+            <Field label="Kode pos" htmlFor="postalCode" error={errors.postalCode?.message}>
+        <input
+          id="postalCode"
+          inputMode="numeric"
+          maxLength={5}
+          autoComplete="postal-code"
+          className={inputClass}
+          {...register("postalCode", {
+            required: "Kode pos wajib diisi",
+            pattern: { value: /^\d{5}$/, message: "Kode pos harus 5 digit" },
+          })}
+        />
+      </Field>
       <Field label="Alamat lengkap" htmlFor="street" error={errors.street?.message}>
         <textarea
           id="street"

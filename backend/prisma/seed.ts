@@ -1,6 +1,7 @@
 import "dotenv/config";
 import bcrypt from "bcrypt";
 import { prisma } from "../src/lib/prisma";
+import { buildDefaultManualConfig } from "../src/shipping/manual.config";
 
 const SIZES = ["S", "M", "L", "XL"];
 
@@ -110,7 +111,15 @@ async function main() {
       },
     },
   });
-
+  // Tarif ongkir manual (contoh; client menggantinya dengan tarif sebenarnya)
+  await prisma.storeSetting.upsert({
+    where: { key: "shipping_manual" },
+    update: {},
+    create: {
+      key: "shipping_manual",
+      value: JSON.parse(JSON.stringify(buildDefaultManualConfig())),
+    },
+  });
   console.log("Seed selesai.");
 }
 
