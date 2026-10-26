@@ -4,8 +4,8 @@ import { useAuth } from "../../hooks/useAuth";
 const NAV = [
   { to: "/admin", label: "Dashboard", end: true, ready: true },
   { to: "/admin/orders", label: "Pesanan", ready: false },
-  { to: "/admin/products", label: "Produk", ready: false },
-  { to: "/admin/categories", label: "Kategori", ready: false },
+  { to: "/admin/products", label: "Produk", ready: true },
+  { to: "/admin/categories", label: "Kategori", ready: true },
   { to: "/admin/settings", label: "Pengaturan", ready: false },
 ];
 

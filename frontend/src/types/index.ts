@@ -221,3 +221,75 @@ export interface AdminDashboard {
     recipient: string;
   }[];
 }
+
+export interface AdminCategory {
+  id: string;
+  name: string;
+  slug: string;
+  productCount: number;
+}
+
+export interface AdminProductListItem {
+  id: string;
+  name: string;
+  slug: string;
+  category: { id: string; name: string };
+  basePrice: number;
+  isActive: boolean;
+  isFeatured: boolean;
+  image: string | null;
+  variantCount: number;
+  totalStock: number;
+}
+
+export interface AdminVariant {
+  id: string;
+  sku: string;
+  color: string;
+  size: string;
+  stock: number;
+  priceOverride: number | null;
+  isActive: boolean;
+  orderCount: number;
+}
+
+export interface AdminProductDetail {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  categoryId: string;
+  category: { id: string; name: string };
+  basePrice: number;
+  weightGram: number;
+  isActive: boolean;
+  isFeatured: boolean;
+  images: { id: string; url: string; isPrimary: boolean }[];
+  variants: AdminVariant[];
+}
+
+export interface AdminProductInput {
+  name: string;
+  slug?: string;
+  description: string;
+  categoryId: string;
+  basePrice: number;
+  weightGram: number;
+  isActive: boolean;
+  isFeatured: boolean;
+  variants: {
+    id?: string;
+    color: string;
+    size: string;
+    sku?: string;
+    stock: number;
+    expectedStock?: number;
+    priceOverride: number | null;
+    isActive: boolean;
+  }[];
+}
+
+export interface AdminProductSaveResult {
+  product: AdminProductDetail;
+  warnings: string[];
+}
