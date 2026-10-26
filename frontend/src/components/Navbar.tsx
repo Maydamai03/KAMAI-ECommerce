@@ -33,6 +33,11 @@ export default function Navbar() {
                 {/* <span className="hidden text-sm text-neutral-600 sm:inline">
                   Halo, {user.name.split(" ")[0]}
                 </span> */}
+                {user.role === "ADMIN" && (
+                  <Link to="/admin" className="text-sm font-medium text-neutral-900 underline">
+                    Admin
+                  </Link>
+                )}
                 <Link to="/account" className="hidden text-sm text-neutral-600 hover:text-black sm:inline">
                   Halo, {user.name.split(" ")[0]}
                 </Link>

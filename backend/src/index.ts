@@ -12,6 +12,7 @@ import { orderRouter } from "./routes/order.routes";
 import { paymentRouter } from "./routes/payment.routes";
 import { startExpiryJob } from "./jobs/expireOrders";
 import { shippingRouter } from "./routes/shipping.routes";
+import { adminRouter } from "./routes/admin.routes";
 
 const app = express();
 // Diperlukan agar IP asli terbaca di belakang ngrok/hosting (untuk rate limit)
@@ -33,11 +34,13 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/auth", authRouter);
 app.use("/api/me", meRouter);
+app.use("/api/admin", adminRouter);
 app.use("/api", catalogRouter);
 app.use("/api", cartRouter);
 app.use("/api", orderRouter);
 app.use("/api", paymentRouter);
 app.use("/api", shippingRouter);
+
 
 // Harus paling bawah
 app.use("/api", notFoundHandler);

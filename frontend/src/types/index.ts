@@ -203,3 +203,21 @@ export interface ShippingRatesResponse {
   weightGram: number;
   rates: ShippingRate[];
 }
+
+export interface AdminDashboard {
+  ordersToday: number;
+  needsProcessing: number;
+  revenue7Days: number;
+  productCount: number;
+  customerCount: number;
+  statusCounts: Record<OrderStatus, number>;
+  revenueByDay: { date: string; total: number }[];
+  lowStock: { id: string; productName: string; slug: string; variant: string; stock: number }[];
+  recentOrders: {
+    orderNumber: string;
+    status: OrderStatus;
+    total: number;
+    createdAt: string;
+    recipient: string;
+  }[];
+}

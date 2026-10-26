@@ -20,6 +20,10 @@ import CheckoutPage from "./pages/CheckoutPage";
 
 import OrderPage from "./pages/OrderPage";
 
+import AdminLayout from "./components/admin/AdminLayout";
+import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
+
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 60_000, refetchOnWindowFocus: false, retry: 1 },
@@ -40,6 +44,17 @@ const router = createBrowserRouter([
       { path: "checkout", element: <CheckoutPage /> },
       { path: "orders/:orderNumber", element: <OrderPage /> },
       { path: "*", element: <NotFoundPage /> },
+    ],
+  },
+    {
+    path: "admin",
+    element: <AdminLayout />,
+    children: [
+      { index: true, element: <AdminDashboardPage /> },
+      {
+        path: "*",
+        element: <p className="text-sm text-neutral-600">Halaman admin tidak ditemukan.</p>,
+      },
     ],
   },
 ]);
