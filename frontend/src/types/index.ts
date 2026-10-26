@@ -293,3 +293,9 @@ export interface AdminProductSaveResult {
   product: AdminProductDetail;
   warnings: string[];
 }
+
+export interface AdminImage {
+  id: string;
+  url: string;
+  isPrimary: boolean;
+}

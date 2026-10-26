@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import ProductImages from "../../components/admin/ProductImages";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -53,6 +54,8 @@ function ProductForm({
 }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const location = useLocation();
+  const notice = (location.state as { notice?: { text: string; warnings: string[] } } | null)?.notice;
 
   const {
     register,
@@ -203,14 +206,23 @@ function ProductForm({
     try {
       const result = await save.mutateAsync(payload);
       invalidateCatalog(qc);
-      navigate("/admin/products", {
-        state: {
-          notice: {
-            text: product ? `Produk "${result.product.name}" diperbarui.` : `Produk "${result.product.name}" ditambahkan.`,
-            warnings: result.warnings,
+            if (product) {
+        navigate("/admin/products", {
+          state: {
+            notice: { text: `Produk "${result.product.name}" diperbarui.`, warnings: result.warnings },
           },
-        },
-      });
+        });
+      } else {
+        navigate(`/admin/products/${result.product.id}`, {
+          replace: true,
+          state: {
+            notice: {
+              text: `Produk "${result.product.name}" ditambahkan. Sekarang unggah gambarnya.`,
+              warnings: result.warnings,
+            },
+          },
+        });
+      }
     } catch (e) {
       setFormError(errorText(e));
     }
@@ -229,6 +241,17 @@ function ProductForm({
           Kembali ke daftar
         </Link>
       </div>
+              {notice && (
+        <div role="status" className="border border-green-200 bg-green-50 p-3 text-sm text-green-900">
+          <p>{notice.text}</p>
+          {notice.warnings.map((w) => (
+            <p key={w} className="mt-1 text-orange-800">
+              {w}
+            </p>
+          ))}
+        </div>
+      )}
+
 
       <section className="space-y-4 border border-neutral-200 bg-white p-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide">Informasi produk</h2>
@@ -344,18 +367,16 @@ function ProductForm({
       <section className="space-y-4 border border-neutral-200 bg-white p-4">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-wide">Gambar</h2>
-          {product && product.images.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {product.images.map((img) => (
-                <img key={img.id} src={img.url} alt="" className="h-24 w-20 object-cover" />
-              ))}
-            </div>
-          ) : (
-            <p className="mt-2 text-sm text-neutral-500">Belum ada gambar.</p>
-          )}
-          <p className="mt-2 text-xs text-neutral-500">
-            Unggah dan atur gambar produk tersedia di tahap berikutnya.
-          </p>
+            {product ? (
+                <ProductImages productId={product.id} initial={product.images} />
+            ) : (
+                <section className="border border-neutral-200 bg-white p-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide">Gambar</h2>
+                <p className="mt-2 text-sm text-neutral-500">
+                    Simpan produk terlebih dahulu. Setelah itu kamu akan dibawa ke halaman ubah untuk mengunggah gambar.
+                </p>
+                </section>
+            )}
         </div>
       </section>
 

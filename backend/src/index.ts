@@ -13,6 +13,7 @@ import { paymentRouter } from "./routes/payment.routes";
 import { startExpiryJob } from "./jobs/expireOrders";
 import { shippingRouter } from "./routes/shipping.routes";
 import { adminRouter } from "./routes/admin.routes";
+import { storageConfig } from "./config/storage";
 
 const app = express();
 // Diperlukan agar IP asli terbaca di belakang ngrok/hosting (untuk rate limit)
@@ -27,6 +28,18 @@ app.use(
 );
 app.use(express.json());
 app.use(cookieParser());
+// Mode lokal: sajikan berkas unggahan (hanya untuk development)
+if (storageConfig.mode === "local") {
+  app.use(
+    "/uploads",
+    (_req, res, next) => {
+      // Helmet membatasi sumber daya ke asal yang sama; frontend (port lain) perlu izin ini
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+      next();
+    },
+    express.static(storageConfig.uploadDir, { maxAge: "7d", index: false })
+  );
+}
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });

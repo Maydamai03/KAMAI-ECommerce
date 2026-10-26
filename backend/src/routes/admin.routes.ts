@@ -20,6 +20,14 @@ import {
   setProductFlags,
   updateAdminProduct,
 } from "../services/admin-product.service";
+import multer from "multer";
+import { storageConfig } from "../config/storage";
+import {
+  deleteProductImage,
+  reorderProductImages,
+  reorderSchema,
+  uploadProductImages,
+} from "../services/admin-image.service";
 
 type Handler = (req: Request, res: Response) => Promise<void>;
 
@@ -120,5 +128,39 @@ adminRouter.delete(
   wrap(async (req, res) => {
     await deleteAdminProduct(String(req.params.id));
     res.json({ success: true, data: null });
+  })
+);
+
+/* Gambar produk */
+
+const upload = multer({
+  storage: multer.memoryStorage(), // berkas diproses di memori, tidak ditulis ke disk oleh Multer
+  limits: { fileSize: storageConfig.maxFileBytes, files: storageConfig.maxImagesPerProduct },
+});
+
+adminRouter.post(
+  "/products/:id/images",
+  upload.array("images", storageConfig.maxImagesPerProduct),
+  wrap(async (req, res) => {
+    const files = (req.files ?? []) as Express.Multer.File[];
+    const data = await uploadProductImages(String(req.params.id), files);
+    res.status(201).json({ success: true, data });
+  })
+);
+
+adminRouter.put(
+  "/products/:id/images/order",
+  wrap(async (req, res) => {
+    const { imageIds } = reorderSchema.parse(req.body);
+    const data = await reorderProductImages(String(req.params.id), imageIds);
+    res.json({ success: true, data });
+  })
+);
+
+adminRouter.delete(
+  "/products/:id/images/:imageId",
+  wrap(async (req, res) => {
+    const data = await deleteProductImage(String(req.params.id), String(req.params.imageId));
+    res.json({ success: true, data });
   })
 );

@@ -70,3 +70,8 @@ export function apiPatch<T>(path: string, body?: unknown) {
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 }
+
+// Untuk unggah berkas: Content-Type diatur browser sendiri (termasuk boundary)
+export function apiUpload<T>(path: string, formData: FormData) {
+  return request<T>(path, { method: "POST", body: formData });
+}

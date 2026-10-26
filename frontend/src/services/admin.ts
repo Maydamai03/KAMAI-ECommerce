@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "../lib/api";
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut, apiUpload } from "../lib/api";
 import type {
   AdminCategory,
   AdminDashboard,
@@ -7,6 +7,7 @@ import type {
   AdminProductListItem,
   AdminProductSaveResult,
   Pagination,
+  AdminImage,
 } from "../types";
 
 export const getAdminDashboard = () => apiGet<AdminDashboard>("/admin/dashboard");
@@ -41,3 +42,14 @@ export const updateProduct = (id: string, input: AdminProductInput) =>
 export const setProductFlags = (id: string, flags: { isActive?: boolean; isFeatured?: boolean }) =>
   apiPatch<null>(`/admin/products/${id}/flags`, flags);
 export const deleteProduct = (id: string) => apiDelete<null>(`/admin/products/${id}`);
+
+/* Gambar produk */
+export const uploadProductImages = (id: string, files: File[]) => {
+  const form = new FormData();
+  files.forEach((file) => form.append("images", file));
+  return apiUpload<AdminImage[]>(`/admin/products/${id}/images`, form);
+};
+export const reorderProductImages = (id: string, imageIds: string[]) =>
+  apiPut<AdminImage[]>(`/admin/products/${id}/images/order`, { imageIds });
+export const deleteProductImage = (id: string, imageId: string) =>
+  apiDelete<AdminImage[]>(`/admin/products/${id}/images/${imageId}`);
