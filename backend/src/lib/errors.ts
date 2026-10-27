@@ -8,3 +8,6 @@ export class AppError extends Error {
     super(message);
   }
 }
+
+export const isUniqueViolation = (e: unknown): boolean =>
+  (e as { code?: string } | null)?.code === "P2002";

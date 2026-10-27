@@ -3,9 +3,13 @@ import { AppError } from "../lib/errors";
 import { TtlCache } from "../lib/ttlCache";
 import { manualConfigSchema, type ManualConfig, type ManualRule } from "./manual.config";
 import { findDistrict, islandOf, searchDistricts, type Island } from "./regions";
-import type { ShippingProvider, ShippingRate } from "./types";
+import type { ShippingPoint, ShippingProvider, ShippingRate } from "./types";
 
 const configCache = new TtlCache<ManualConfig>(30_000, 1);
+
+export function clearManualConfigCache() {
+  configCache.clear();
+}
 
 async function loadConfig(): Promise<ManualConfig> {
   const hit = configCache.get("config");
@@ -26,7 +30,7 @@ async function loadConfig(): Promise<ManualConfig> {
   return parsed.data;
 }
 
-interface Destination {
+interface Place {
   regency: string;
   province: string;
   island?: Island;
@@ -34,15 +38,39 @@ interface Destination {
 
 const norm = (s?: string) => (s ?? "").trim().toLowerCase();
 
-// Aturan paling spesifik menang: kota > provinsi > pulau > bawaan
-function pickRule(rules: ManualRule[], dest: Destination | null): ManualRule | null {
+function placeOf(point: ShippingPoint): Place | null {
+  const district = findDistrict(point.areaId);
+  if (!district) return null;
+  return {
+    regency: district.regency,
+    province: district.province,
+    island: islandOf(district.provinceId),
+  };
+}
+
+// Urutan: kota, provinsi, pulau, lalu "default". Di tiap tingkat, aturan relatif (terhadap gudang)
+// didahulukan dari aturan yang menyebut nama tertentu.
+function pickRule(rules: ManualRule[], dest: Place | null, origin: Place | null): ManualRule | null {
   if (dest) {
-    const city = rules.find((r) => r.scope === "city" && norm(r.value) === norm(dest.regency));
-    if (city) return city;
-    const province = rules.find((r) => r.scope === "province" && norm(r.value) === norm(dest.province));
-    if (province) return province;
-    const island = rules.find((r) => r.scope === "island" && dest.island && norm(r.value) === dest.island);
-    if (island) return island;
+    const find = (scope: ManualRule["scope"], test?: (r: ManualRule) => boolean) =>
+      rules.find((r) => r.scope === scope && (!test || test(r)));
+
+    const sameCity = Boolean(origin) && norm(origin?.regency) !== "" && norm(origin?.regency) === norm(dest.regency);
+    const sameProvince =
+      Boolean(origin) && norm(origin?.province) !== "" && norm(origin?.province) === norm(dest.province);
+    const sameIsland = origin?.island !== undefined && origin.island === dest.island;
+
+    const candidates: (ManualRule | undefined)[] = [
+      sameCity ? find("same_city") : undefined,
+      find("city", (r) => norm(r.value) === norm(dest.regency)),
+      sameProvince ? find("same_province") : undefined,
+      find("province", (r) => norm(r.value) === norm(dest.province)),
+      sameIsland ? find("same_island") : undefined,
+      dest.island ? find("island", (r) => norm(r.value) === dest.island) : undefined,
+    ];
+
+    const hit = candidates.find((c) => c !== undefined);
+    if (hit) return hit;
   }
   return rules.find((r) => r.scope === "default") ?? null;
 }
@@ -61,17 +89,12 @@ export const manualProvider: ShippingProvider = {
     }));
   },
 
-  async getRates({ destination, weightGram }) {
+  async getRates({ origin, destination, weightGram }) {
     const config = await loadConfig();
 
-    const district = findDistrict(destination.areaId);
-    const dest: Destination | null = district
-      ? {
-          regency: district.regency,
-          province: district.province,
-          island: islandOf(district.provinceId),
-        }
-      : null; // alamat tanpa area dikenal: hanya aturan "default" yang berlaku
+    // Tujuan atau gudang yang tidak dikenal: hanya aturan "default" yang berlaku
+    const dest = placeOf(destination);
+    const orig = placeOf(origin);
 
     const kg = Math.max(1, Math.ceil(weightGram / 1000));
     const rates: ShippingRate[] = [];
@@ -79,7 +102,7 @@ export const manualProvider: ShippingProvider = {
     for (const service of config.services) {
       if (service.maxWeightGram && weightGram > service.maxWeightGram) continue;
 
-      const rule = pickRule(service.rules, dest);
+      const rule = pickRule(service.rules, dest, orig);
       if (!rule) continue; // tidak ada aturan yang cocok: layanan tidak tersedia di tujuan ini
 
       rates.push({
@@ -91,6 +114,7 @@ export const manualProvider: ShippingProvider = {
         price: rule.firstKg + (kg - 1) * rule.nextKg,
         etdMinDays: rule.etdMin,
         etdMaxDays: Math.max(rule.etdMin, rule.etdMax),
+        zone: rule.scope,
       });
     }
     return rates;

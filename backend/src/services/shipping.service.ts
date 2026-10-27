@@ -100,3 +100,7 @@ export async function resolveShippingRate(
   }
   return match;
 }
+
+export function clearShippingCaches() {
+  rateCache.clear();
+}

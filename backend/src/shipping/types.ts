@@ -28,6 +28,7 @@ export interface ShippingRate {
   price: number;
   etdMinDays: number;
   etdMaxDays: number;
+  zone?: string;
 }
 
 export interface ShippingProvider {

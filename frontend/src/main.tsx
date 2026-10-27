@@ -20,6 +20,18 @@ import CheckoutPage from "./pages/CheckoutPage";
 
 import OrderPage from "./pages/OrderPage";
 
+import AdminLayout from "./components/admin/AdminLayout";
+import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
+
+import AdminCategoriesPage from "./pages/admin/AdminCategoriesPage";
+import AdminProductsPage from "./pages/admin/AdminProductsPage";
+import AdminProductFormPage from "./pages/admin/AdminProductFormPage";
+
+import AdminOrdersPage from "./pages/admin/AdminOrdersPage";
+import AdminOrderDetailPage from "./pages/admin/AdminOrderDetailPage";
+
+import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 60_000, refetchOnWindowFocus: false, retry: 1 },
@@ -40,6 +52,24 @@ const router = createBrowserRouter([
       { path: "checkout", element: <CheckoutPage /> },
       { path: "orders/:orderNumber", element: <OrderPage /> },
       { path: "*", element: <NotFoundPage /> },
+    ],
+  },
+    {
+    path: "admin",
+    element: <AdminLayout />,
+    children: [
+      { index: true, element: <AdminDashboardPage /> },
+      { path: "categories", element: <AdminCategoriesPage /> },
+      { path: "products", element: <AdminProductsPage /> },
+      { path: "products/new", element: <AdminProductFormPage /> },
+      { path: "products/:id", element: <AdminProductFormPage /> },
+      { path: "orders", element: <AdminOrdersPage /> },
+      { path: "orders/:orderNumber", element: <AdminOrderDetailPage /> },
+      { path: "settings", element: <AdminSettingsPage /> },
+      {
+        path: "*",
+        element: <p className="text-sm text-neutral-600">Halaman admin tidak ditemukan.</p>,
+      },
     ],
   },
 ]);

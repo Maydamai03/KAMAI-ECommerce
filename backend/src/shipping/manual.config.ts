@@ -1,29 +1,74 @@
 import { z } from "zod";
 
-const ruleSchema = z.object({
-  scope: z.enum(["city", "province", "island", "default"]),
-  // city: nama kabupaten/kota (mis. "Kota Surabaya"); province: nama provinsi;
-  // island: sumatera | jawa | nusa | kalimantan | sulawesi | timur; default: tanpa value
-  value: z.string().trim().optional(),
-  firstKg: z.number().int().min(0), // harga untuk 1 kg pertama
-  nextKg: z.number().int().min(0), // harga tiap kg berikutnya
-  etdMin: z.number().int().min(0),
-  etdMax: z.number().int().min(0),
-});
+export const ISLANDS = ["sumatera", "jawa", "nusa", "kalimantan", "sulawesi", "timur"] as const;
 
-const serviceSchema = z.object({
-  courierCode: z.string().min(1),
-  courierName: z.string().min(1),
-  serviceCode: z.string().min(1),
-  serviceName: z.string().min(1),
-  description: z.string().default(""),
-  maxWeightGram: z.number().int().positive().optional(),
-  rules: z.array(ruleSchema).min(1),
-});
+const needsValue = (scope: string) => scope === "city" || scope === "province" || scope === "island";
 
-export const manualConfigSchema = z.object({
-  services: z.array(serviceSchema).min(1),
-});
+const ruleSchema = z
+  .object({
+    scope: z.enum(["same_city", "same_province", "same_island", "city", "province", "island", "default"]),
+    // city: nama kabupaten/kota; province: nama provinsi; island: salah satu dari ISLANDS
+    value: z.string().trim().max(80).optional(),
+    firstKg: z.number().int().min(0).max(100_000_000), // harga 1 kg pertama
+    nextKg: z.number().int().min(0).max(100_000_000), // harga tiap kg berikutnya
+    etdMin: z.number().int().min(0).max(60),
+    etdMax: z.number().int().min(0).max(60),
+  })
+  .superRefine((r, ctx) => {
+    if (needsValue(r.scope) && !r.value) {
+      ctx.addIssue({ code: "custom", message: "Nilai zona wajib diisi", path: ["value"] });
+    }
+    if (r.scope === "island" && r.value && !(ISLANDS as readonly string[]).includes(r.value)) {
+      ctx.addIssue({ code: "custom", message: "Pulau tidak dikenal", path: ["value"] });
+    }
+    if (r.etdMax < r.etdMin) {
+      ctx.addIssue({ code: "custom", message: "Estimasi maksimum tidak boleh lebih kecil dari minimum", path: ["etdMax"] });
+    }
+  });
+
+const serviceSchema = z
+  .object({
+    courierCode: z.string().min(1).max(30).regex(/^[a-z0-9][a-z0-9_-]*$/, "Kode kurir tidak valid"),
+    courierName: z.string().trim().min(1, "Nama kurir wajib diisi").max(40),
+    serviceCode: z.string().min(1).max(40).regex(/^[a-z0-9][a-z0-9_-]*$/, "Kode layanan tidak valid"),
+    serviceName: z.string().trim().min(1, "Nama layanan wajib diisi").max(40),
+    description: z.string().trim().max(120).default(""),
+    maxWeightGram: z.number().int().positive().max(1_000_000).optional(),
+    rules: z.array(ruleSchema).min(1, "Setiap layanan membutuhkan minimal satu zona").max(12),
+  })
+  .superRefine((s, ctx) => {
+    const seen = new Set<string>();
+    s.rules.forEach((r, i) => {
+      const sig = needsValue(r.scope) ? `${r.scope}|${(r.value ?? "").toLowerCase()}` : r.scope;
+      if (seen.has(sig)) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Zona yang sama muncul lebih dari sekali pada ${s.courierName} ${s.serviceName}`,
+          path: ["rules", i],
+        });
+      }
+      seen.add(sig);
+    });
+  });
+
+export const manualConfigSchema = z
+  .object({
+    services: z.array(serviceSchema).min(1, "Tambahkan minimal satu layanan").max(12),
+  })
+  .superRefine((c, ctx) => {
+    const pairs = new Set<string>();
+    c.services.forEach((s, i) => {
+      const pair = `${s.courierCode}|${s.serviceCode}`;
+      if (pairs.has(pair)) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Layanan ${s.courierName} ${s.serviceName} muncul lebih dari sekali`,
+          path: ["services", i],
+        });
+      }
+      pairs.add(pair);
+    });
+  });
 
 export type ManualRule = z.infer<typeof ruleSchema>;
 export type ManualService = z.infer<typeof serviceSchema>;
@@ -31,7 +76,7 @@ export type ManualConfig = z.infer<typeof manualConfigSchema>;
 
 /* ------------------------------------------------------------------ */
 /* Tarif bawaan (CONTOH, bukan tarif kurir sesungguhnya)                */
-/* Asal pengiriman diasumsikan Kota Surabaya.                           */
+/* Zona relatif terhadap alamat gudang.                                 */
 /* ------------------------------------------------------------------ */
 
 const round500 = (n: number) => Math.round(n / 500) * 500;
@@ -55,13 +100,9 @@ interface Zone {
 }
 
 const ZONES: Zone[] = [
-  { scope: "city", value: "Kota Surabaya", f: 1, etd: [1, 2], expressEtd: [1, 1], expressOk: true },
-  { scope: "province", value: "Jawa Timur", f: 1.4, etd: [2, 3], expressEtd: [1, 2], expressOk: true },
-  { scope: "island", value: "jawa", f: 2, etd: [2, 4], expressEtd: [1, 2], expressOk: true },
-  { scope: "island", value: "sumatera", f: 3, etd: [3, 6], expressOk: false },
-  { scope: "island", value: "kalimantan", f: 3, etd: [3, 6], expressOk: false },
-  { scope: "island", value: "sulawesi", f: 3, etd: [3, 6], expressOk: false },
-  { scope: "island", value: "nusa", f: 3, etd: [3, 6], expressOk: false },
+  { scope: "same_city", f: 1, etd: [1, 2], expressEtd: [1, 1], expressOk: true },
+  { scope: "same_province", f: 1.4, etd: [2, 3], expressEtd: [1, 2], expressOk: true },
+  { scope: "same_island", f: 2, etd: [2, 4], expressEtd: [1, 2], expressOk: true },
   { scope: "island", value: "timur", f: 4.5, etd: [5, 9], expressOk: false },
   { scope: "default", f: 3, etd: [4, 7], expressOk: false },
 ];
