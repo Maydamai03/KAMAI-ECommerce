@@ -161,3 +161,13 @@ export function paymentReceivedEmail(order: EmailOrder) {
     buttonLabel: "Lihat pesanan",
   });
 }
+
+export function orderShippedEmail(order: EmailOrder, trackingNumber: string) {
+  return render(order, {
+    subject: `[${mailConfig.brand}] Pesanan ${order.orderNumber} sudah dikirim`,
+    heading: "Pesananmu sudah dikirim",
+    intro: `Halo ${order.address.recipientName}, pesananmu sudah diserahkan ke kurir.`,
+    notice: `${order.courier ? `Kurir: ${order.courier}. ` : ""}Nomor resi: ${trackingNumber}. Kamu dapat melacak paket di situs atau aplikasi kurir.`,
+    buttonLabel: "Lihat pesanan",
+  });
+}

@@ -4,6 +4,7 @@ import { getAdminDashboard } from "../../services/admin";
 import { formatDateTime, formatRupiah } from "../../lib/format";
 import { STATUS_LABEL, STATUS_STYLE } from "../../lib/orderStatus";
 import type { OrderStatus } from "../../types";
+import RevenueChart from "../../components/admin/RevenueChart";
 
 const STATUS_ORDER: OrderStatus[] = [
   "PENDING",
@@ -29,7 +30,7 @@ function Stat({
   return (
     <div className={`border bg-white p-4 ${highlight ? "border-black" : "border-neutral-200"}`}>
       <p className="text-xs uppercase tracking-wide text-neutral-500">{label}</p>
-      <p className="mt-2 text-2xl font-bold">{value}</p>
+      <p className="mt-2 break-words text-xl font-bold sm:text-2xl">{value}</p>
       {hint && <p className="mt-1 text-xs text-neutral-500">{hint}</p>}
     </div>
   );
@@ -58,7 +59,7 @@ export default function AdminDashboardPage() {
   }
 
   const d = dash.data;
-  const maxDay = Math.max(1, ...d.revenueByDay.map((x) => x.total));
+  // const maxDay = Math.max(1, ...d.revenueByDay.map((x) => x.total));
 
   return (
     <div className="space-y-8">
@@ -66,17 +67,19 @@ export default function AdminDashboardPage() {
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Stat label="Pesanan hari ini" value={d.ordersToday} />
-        <Stat
-          label="Perlu diproses"
-          value={d.needsProcessing}
-          hint="Sudah dibayar, belum diproses"
-          highlight={d.needsProcessing > 0}
-        />
+        <Link to="/admin/orders?status=PAID" className="block">
+          <Stat
+            label="Perlu diproses"
+            value={d.needsProcessing}
+            hint="Sudah dibayar, belum diproses"
+            highlight={d.needsProcessing > 0}
+          />
+        </Link>
         <Stat label="Pendapatan 7 hari" value={formatRupiah(d.revenue7Days)} hint="Dari pembayaran diterima" />
         <Stat label="Stok menipis" value={d.lowStock.length} hint="Varian dengan stok 3 atau kurang" />
       </div>
 
-      <section className="border border-neutral-200 bg-white p-4">
+      {/* <section className="border border-neutral-200 bg-white p-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide">Pendapatan 7 hari terakhir</h2>
         <div className="mt-4 flex h-40 items-end gap-2">
           {d.revenueByDay.map((day) => (
@@ -92,7 +95,8 @@ export default function AdminDashboardPage() {
             </div>
           ))}
         </div>
-      </section>
+      </section> */}
+      <RevenueChart />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="border border-neutral-200 bg-white p-4">
@@ -143,7 +147,7 @@ export default function AdminDashboardPage() {
             {d.recentOrders.map((o) => (
               <li key={o.orderNumber}>
                 <Link
-                  to={`/orders/${o.orderNumber}`}
+                  to={`/admin/orders/${o.orderNumber}`}
                   className="flex flex-wrap items-center justify-between gap-2 py-3 hover:bg-neutral-50"
                 >
                   <span>

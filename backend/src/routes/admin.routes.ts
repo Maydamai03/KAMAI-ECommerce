@@ -28,6 +28,18 @@ import {
   reorderSchema,
   uploadProductImages,
 } from "../services/admin-image.service";
+import {
+  addOrderNote,
+  changeOrderStatus,
+  getAdminOrder,
+  listAdminOrders,
+  noteSchema,
+  orderListQuerySchema,
+  shipmentSchema,
+  statusChangeSchema,
+  updateShipment,
+} from "../services/admin-order.service";
+import { getRevenueSeries, revenueQuerySchema } from "../services/admin-revenue.service";
 
 type Handler = (req: Request, res: Response) => Promise<void>;
 
@@ -162,5 +174,57 @@ adminRouter.delete(
   wrap(async (req, res) => {
     const data = await deleteProductImage(String(req.params.id), String(req.params.imageId));
     res.json({ success: true, data });
+  })
+);
+
+/* Pesanan */
+
+adminRouter.get(
+  "/orders",
+  wrap(async (req, res) => {
+    const query = orderListQuerySchema.parse(req.query);
+    res.json({ success: true, data: await listAdminOrders(query) });
+  })
+);
+
+adminRouter.get(
+  "/orders/:orderNumber",
+  wrap(async (req, res) => {
+    res.json({ success: true, data: await getAdminOrder(String(req.params.orderNumber)) });
+  })
+);
+
+adminRouter.patch(
+  "/orders/:orderNumber/status",
+  wrap(async (req, res) => {
+    const input = statusChangeSchema.parse(req.body);
+    const data = await changeOrderStatus(String(req.params.orderNumber), input, req.user!.id);
+    res.json({ success: true, data });
+  })
+);
+
+adminRouter.post(
+  "/orders/:orderNumber/notes",
+  wrap(async (req, res) => {
+    const { note } = noteSchema.parse(req.body);
+    const data = await addOrderNote(String(req.params.orderNumber), note, req.user!.id);
+    res.status(201).json({ success: true, data });
+  })
+);
+
+adminRouter.put(
+  "/orders/:orderNumber/shipment",
+  wrap(async (req, res) => {
+    const input = shipmentSchema.parse(req.body);
+    const data = await updateShipment(String(req.params.orderNumber), input, req.user!.id);
+    res.json({ success: true, data });
+  })
+);
+
+adminRouter.get(
+  "/revenue",
+  wrap(async (req, res) => {
+    const { range } = revenueQuerySchema.parse(req.query);
+    res.json({ success: true, data: await getRevenueSeries(range) });
   })
 );

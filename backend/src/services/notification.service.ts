@@ -2,6 +2,7 @@ import { prisma } from "../lib/prisma";
 import { sendMail } from "../lib/mailer";
 import {
   orderCreatedEmail,
+  orderShippedEmail,
   paymentReceivedEmail,
   type EmailOrder,
 } from "../emails/templates";
@@ -53,5 +54,16 @@ export async function notifyPaymentReceived(orderNumber: string): Promise<void> 
     await sendMail({ to: order.email, subject, html, text });
   } catch (e) {
     console.error(`[mail] gagal menyiapkan email pembayaran (${orderNumber}):`, e);
+  }
+}
+
+export async function notifyOrderShipped(orderNumber: string, trackingNumber: string): Promise<void> {
+  try {
+    const order = await loadEmailOrder(orderNumber);
+    if (!order) return;
+    const { subject, html, text } = orderShippedEmail(order, trackingNumber);
+    await sendMail({ to: order.email, subject, html, text });
+  } catch (e) {
+    console.error(`[mail] gagal menyiapkan email pengiriman (${orderNumber}):`, e);
   }
 }

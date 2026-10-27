@@ -247,6 +247,16 @@ export default function OrderPage() {
         </div>
       )}
 
+            {o.shipment && (
+        <div className="mt-6 border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+          <p className="font-medium">Paket sudah dikirim</p>
+          <p className="mt-1">Kurir: {o.shipment.courier}</p>
+          <p>
+            Nomor resi: <span className="font-mono font-medium">{o.shipment.trackingNumber}</span>
+          </p>
+        </div>
+      )}
+
       <section className="mt-8">
         <h2 className="text-sm font-semibold uppercase tracking-wide">Produk</h2>
         <ul className="mt-3 divide-y divide-neutral-200 border-y border-neutral-200 text-sm">

@@ -8,6 +8,12 @@ import type {
   AdminProductSaveResult,
   Pagination,
   AdminImage,
+  AdminOrderDetail, 
+  AdminOrderList, 
+  AdminOrderTarget, 
+  OrderStatus,
+  RevenueRange, 
+  RevenueSeries,
 } from "../types";
 
 export const getAdminDashboard = () => apiGet<AdminDashboard>("/admin/dashboard");
@@ -53,3 +59,28 @@ export const reorderProductImages = (id: string, imageIds: string[]) =>
   apiPut<AdminImage[]>(`/admin/products/${id}/images/order`, { imageIds });
 export const deleteProductImage = (id: string, imageId: string) =>
   apiDelete<AdminImage[]>(`/admin/products/${id}/images/${imageId}`);
+
+/* Pesanan */
+export const getAdminOrders = (params: {
+  status?: OrderStatus;
+  q?: string;
+  page?: number;
+  limit?: number;
+}) => apiGet<AdminOrderList>("/admin/orders", params as Record<string, string | number | undefined>);
+
+export const getAdminOrder = (orderNumber: string) =>
+  apiGet<AdminOrderDetail>(`/admin/orders/${orderNumber}`);
+
+export const changeOrderStatus = (
+  orderNumber: string,
+  body: { status: AdminOrderTarget; note?: string; trackingNumber?: string; courier?: string }
+) => apiPatch<AdminOrderDetail>(`/admin/orders/${orderNumber}/status`, body);
+
+export const addOrderNote = (orderNumber: string, note: string) =>
+  apiPost<AdminOrderDetail>(`/admin/orders/${orderNumber}/notes`, { note });
+
+export const updateShipment = (orderNumber: string, body: { trackingNumber: string; courier?: string }) =>
+  apiPut<AdminOrderDetail>(`/admin/orders/${orderNumber}/shipment`, body);
+
+export const getAdminRevenue = (range: RevenueRange) =>
+  apiGet<RevenueSeries>("/admin/revenue", { range });

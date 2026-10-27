@@ -16,3 +16,9 @@ export function invalidateCatalog(qc: QueryClient) {
     qc.invalidateQueries({ queryKey: key });
   }
 }
+
+export function invalidateOrders(qc: QueryClient) {
+  for (const key of [["admin-orders"], ["admin-dashboard"], ["my-orders"], ["order"]]) {
+    qc.invalidateQueries({ queryKey: key });
+  }
+}

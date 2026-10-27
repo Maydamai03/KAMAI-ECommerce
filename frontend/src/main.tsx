@@ -27,6 +27,9 @@ import AdminCategoriesPage from "./pages/admin/AdminCategoriesPage";
 import AdminProductsPage from "./pages/admin/AdminProductsPage";
 import AdminProductFormPage from "./pages/admin/AdminProductFormPage";
 
+import AdminOrdersPage from "./pages/admin/AdminOrdersPage";
+import AdminOrderDetailPage from "./pages/admin/AdminOrderDetailPage";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 60_000, refetchOnWindowFocus: false, retry: 1 },
@@ -58,6 +61,8 @@ const router = createBrowserRouter([
       { path: "products", element: <AdminProductsPage /> },
       { path: "products/new", element: <AdminProductFormPage /> },
       { path: "products/:id", element: <AdminProductFormPage /> },
+      { path: "orders", element: <AdminOrdersPage /> },
+      { path: "orders/:orderNumber", element: <AdminOrderDetailPage /> },
       {
         path: "*",
         element: <p className="text-sm text-neutral-600">Halaman admin tidak ditemukan.</p>,

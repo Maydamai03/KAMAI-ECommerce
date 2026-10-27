@@ -161,6 +161,7 @@ export interface Order {
   total: number;
   courierCompany: string | null;
   courierService: string | null;
+  shipment: { courier: string; trackingNumber: string; shippedAt: string | null } | null;
   expiresAt: string;
   createdAt: string;
   email: string | null;
@@ -298,4 +299,84 @@ export interface AdminImage {
   id: string;
   url: string;
   isPrimary: boolean;
+}
+
+export interface AdminOrderListItem {
+  orderNumber: string;
+  status: OrderStatus;
+  total: number;
+  createdAt: string;
+  recipient: string;
+  email: string | null;
+  phone: string | null;
+  itemCount: number;
+  courier: string | null;
+  trackingNumber: string | null;
+}
+
+export interface AdminOrderList {
+  items: AdminOrderListItem[];
+  pagination: Pagination;
+  counts: Record<OrderStatus, number>;
+}
+
+export type AdminOrderTarget = "PROCESSING" | "SHIPPED" | "COMPLETED" | "CANCELLED";
+
+export interface AdminOrderDetail {
+  orderNumber: string;
+  status: OrderStatus;
+  subtotal: number;
+  shippingCost: number;
+  total: number;
+  createdAt: string;
+  expiresAt: string;
+  email: string | null;
+  phone: string | null;
+  customer: { id: string; name: string; email: string } | null;
+  customerNotes: string | null;
+  address: OrderShippingAddress;
+  courierCompany: string | null;
+  courierService: string | null;
+  items: OrderItemView[];
+  payments: {
+    id: string;
+    method: string | null;
+    status: "PENDING" | "SETTLEMENT" | "FAILED" | "EXPIRED" | "CANCELLED";
+    grossAmount: number;
+    paidAt: string | null;
+    providerRef: string | null;
+    fraudStatus: string | null;
+  }[];
+  shipment: {
+    courier: string;
+    trackingNumber: string;
+    shippedAt: string | null;
+    deliveredAt: string | null;
+  } | null;
+  history: {
+    id: string;
+    fromStatus: OrderStatus | null;
+    toStatus: OrderStatus;
+    note: string | null;
+    createdAt: string;
+    actor: string | null;
+  }[];
+  nextStatuses: AdminOrderTarget[];
+  paymentSettled: boolean;
+  refundNeeded: boolean;
+}
+
+export type RevenueRange = "7d" | "30d" | "12m";
+
+export interface RevenuePoint {
+  key: string;
+  total: number;
+  orders: number;
+}
+
+export interface RevenueSeries {
+  range: RevenueRange;
+  buckets: RevenuePoint[];
+  total: number;
+  orders: number;
 }

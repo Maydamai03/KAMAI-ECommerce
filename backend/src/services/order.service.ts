@@ -51,6 +51,7 @@ type AddressSnapshot = {
 
 const orderInclude = {
   items: { orderBy: { productName: "asc" } },
+  shipment: true,
 } satisfies Prisma.OrderInclude;
 
 type OrderRecord = Prisma.OrderGetPayload<{ include: typeof orderInclude }>;
@@ -74,6 +75,13 @@ function toOrderView(order: OrderRecord) {
     shippingCost: order.shippingCost,
     courierCompany: order.courierCompany,
     courierService: order.courierService,
+    shipment: order.shipment
+    ? {
+      courier: order.shipment.courier,
+      trackingNumber: order.shipment.trackingNumber,
+      shippedAt: order.shipment.shippedAt,
+      }
+    : null,
     total: order.total,
     expiresAt: order.expiresAt,
     createdAt: order.createdAt,
