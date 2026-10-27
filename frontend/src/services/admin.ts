@@ -14,6 +14,11 @@ import type {
   OrderStatus,
   RevenueRange, 
   RevenueSeries,
+  AdminSettings, 
+  ManualConfig, 
+  ShippingRate, 
+  StoreOrigin, 
+  StoreProfile,
 } from "../types";
 
 export const getAdminDashboard = () => apiGet<AdminDashboard>("/admin/dashboard");
@@ -84,3 +89,20 @@ export const updateShipment = (orderNumber: string, body: { trackingNumber: stri
 
 export const getAdminRevenue = (range: RevenueRange) =>
   apiGet<RevenueSeries>("/admin/revenue", { range });
+
+
+/* Pengaturan toko */
+export const getAdminSettings = () => apiGet<AdminSettings>("/admin/settings");
+
+export const saveProfile = (input: Record<string, string>) =>
+  apiPut<StoreProfile>("/admin/settings/profile", input);
+
+export const saveOrigin = (input: StoreOrigin) => apiPut<StoreOrigin>("/admin/settings/origin", input);
+
+export const saveManualRates = (config: ManualConfig) =>
+  apiPut<ManualConfig>("/admin/settings/shipping-rates", config);
+
+export const resetManualRates = () => apiPost<ManualConfig>("/admin/settings/shipping-rates/reset");
+
+export const previewRates = (input: { areaId?: string; weightGram: number }) =>
+  apiPost<ShippingRate[]>("/admin/settings/shipping-rates/preview", input);

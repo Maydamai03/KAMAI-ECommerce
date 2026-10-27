@@ -6,7 +6,7 @@ const NAV = [
   { to: "/admin/orders", label: "Pesanan", ready: true },
   { to: "/admin/products", label: "Produk", ready: true },
   { to: "/admin/categories", label: "Kategori", ready: true },
-  { to: "/admin/settings", label: "Pengaturan", ready: false },
+  { to: "/admin/settings", label: "Pengaturan", ready: true },
 ];
 
 export default function AdminLayout() {

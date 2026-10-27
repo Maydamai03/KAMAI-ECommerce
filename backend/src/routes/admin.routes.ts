@@ -41,6 +41,19 @@ import {
 } from "../services/admin-order.service";
 import { getRevenueSeries, revenueQuerySchema } from "../services/admin-revenue.service";
 
+import {
+  getAdminSettings,
+  manualConfigSchema,
+  originSchema,
+  previewManualRates,
+  previewSchema,
+  profileSchema,
+  resetManualRates,
+  updateManualRates,
+  updateOrigin,
+  updateProfile,
+} from "../services/admin-settings.service";
+
 type Handler = (req: Request, res: Response) => Promise<void>;
 
 const wrap =
@@ -226,5 +239,53 @@ adminRouter.get(
   wrap(async (req, res) => {
     const { range } = revenueQuerySchema.parse(req.query);
     res.json({ success: true, data: await getRevenueSeries(range) });
+  })
+);
+
+/* Pengaturan toko */
+
+adminRouter.get(
+  "/settings",
+  wrap(async (_req, res) => {
+    res.json({ success: true, data: await getAdminSettings() });
+  })
+);
+
+adminRouter.put(
+  "/settings/profile",
+  wrap(async (req, res) => {
+    const input = profileSchema.parse(req.body);
+    res.json({ success: true, data: await updateProfile(input) });
+  })
+);
+
+adminRouter.put(
+  "/settings/origin",
+  wrap(async (req, res) => {
+    const input = originSchema.parse(req.body);
+    res.json({ success: true, data: await updateOrigin(input) });
+  })
+);
+
+adminRouter.put(
+  "/settings/shipping-rates",
+  wrap(async (req, res) => {
+    const config = manualConfigSchema.parse(req.body);
+    res.json({ success: true, data: await updateManualRates(config) });
+  })
+);
+
+adminRouter.post(
+  "/settings/shipping-rates/reset",
+  wrap(async (_req, res) => {
+    res.json({ success: true, data: await resetManualRates() });
+  })
+);
+
+adminRouter.post(
+  "/settings/shipping-rates/preview",
+  wrap(async (req, res) => {
+    const input = previewSchema.parse(req.body);
+    res.json({ success: true, data: await previewManualRates(input) });
   })
 );

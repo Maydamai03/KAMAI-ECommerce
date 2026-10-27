@@ -6,6 +6,8 @@ import {
   paymentReceivedEmail,
   type EmailOrder,
 } from "../emails/templates";
+import { getStoreProfile } from "./store-settings.service";
+import type { StoreInfo } from "../emails/templates";
 
 
 async function loadEmailOrder(orderNumber: string): Promise<EmailOrder | null> {
@@ -33,13 +35,19 @@ async function loadEmailOrder(orderNumber: string): Promise<EmailOrder | null> {
   };
 }
 
+async function loadStore(): Promise<StoreInfo> {
+  const profile = await getStoreProfile();
+  return { name: profile.name, email: profile.email, phone: profile.phone ?? profile.whatsapp };
+}
+
 // Kedua fungsi ini tidak pernah melempar error: kegagalan email tidak boleh memengaruhi pesanan.
 
 export async function notifyOrderCreated(orderNumber: string): Promise<void> {
   try {
     const order = await loadEmailOrder(orderNumber);
     if (!order) return;
-    const { subject, html, text } = orderCreatedEmail(order);
+    const store = await loadStore();
+    const { subject, html, text } = orderCreatedEmail(order, store);
     await sendMail({ to: order.email, subject, html, text });
   } catch (e) {
     console.error(`[mail] gagal menyiapkan email pesanan dibuat (${orderNumber}):`, e);
@@ -50,7 +58,8 @@ export async function notifyPaymentReceived(orderNumber: string): Promise<void> 
   try {
     const order = await loadEmailOrder(orderNumber);
     if (!order) return;
-    const { subject, html, text } = paymentReceivedEmail(order);
+    const store = await loadStore();
+    const { subject, html, text } = paymentReceivedEmail(order, store);
     await sendMail({ to: order.email, subject, html, text });
   } catch (e) {
     console.error(`[mail] gagal menyiapkan email pembayaran (${orderNumber}):`, e);
@@ -61,7 +70,8 @@ export async function notifyOrderShipped(orderNumber: string, trackingNumber: st
   try {
     const order = await loadEmailOrder(orderNumber);
     if (!order) return;
-    const { subject, html, text } = orderShippedEmail(order, trackingNumber);
+    const store = await loadStore();
+    const { subject, html, text } = orderShippedEmail(order, trackingNumber, store);
     await sendMail({ to: order.email, subject, html, text });
   } catch (e) {
     console.error(`[mail] gagal menyiapkan email pengiriman (${orderNumber}):`, e);

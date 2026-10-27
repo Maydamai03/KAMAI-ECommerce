@@ -1,6 +1,7 @@
 import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useCartStore } from "../store/cart";
+import { useStoreInfo } from "../hooks/useStoreInfo";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `text-sm font-medium transition-colors hover:text-black ${
@@ -9,6 +10,7 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 
 export default function Navbar() {
   const { user, isLoading, logout } = useAuth();
+  const { data: store } = useStoreInfo();
   const count = useCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0));
   const openCart = useCartStore((s) => s.open);
 
@@ -16,7 +18,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
         <Link to="/" className="text-xl font-bold tracking-tight">
-          Kamai
+            {store?.name ?? "Kamai"}
         </Link>
 
         <nav className="flex items-center gap-4 sm:gap-6">

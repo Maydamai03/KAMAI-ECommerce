@@ -198,6 +198,7 @@ export interface ShippingRate {
   price: number;
   etdMinDays: number;
   etdMaxDays: number;
+  zone?: string;
 }
 
 export interface ShippingRatesResponse {
@@ -379,4 +380,64 @@ export interface RevenueSeries {
   buckets: RevenuePoint[];
   total: number;
   orders: number;
+}
+
+export interface StoreProfile {
+  name: string;
+  email?: string;
+  phone?: string;
+  whatsapp?: string;
+  address?: string;
+}
+
+export interface StoreOrigin {
+  name: string;
+  areaId: string;
+  province: string;
+  city: string;
+  district: string;
+  postalCode: string;
+  address: string;
+  phone?: string;
+}
+
+export type RuleScope =
+  | "same_city"
+  | "same_province"
+  | "same_island"
+  | "city"
+  | "province"
+  | "island"
+  | "default";
+
+export interface ManualRule {
+  scope: RuleScope;
+  value?: string;
+  firstKg: number;
+  nextKg: number;
+  etdMin: number;
+  etdMax: number;
+}
+
+export interface ManualService {
+  courierCode: string;
+  courierName: string;
+  serviceCode: string;
+  serviceName: string;
+  description: string;
+  maxWeightGram?: number;
+  rules: ManualRule[];
+}
+
+export interface ManualConfig {
+  services: ManualService[];
+}
+
+export interface AdminSettings {
+  provider: string;
+  profile: StoreProfile;
+  origin: StoreOrigin | null;
+  originProblem: string | null;
+  manual: ManualConfig | null;
+  manualError: string | null;
 }

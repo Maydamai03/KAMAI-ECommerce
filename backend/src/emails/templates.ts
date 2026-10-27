@@ -21,6 +21,12 @@ export interface EmailOrder {
   courier?: string | null;
 }
 
+export interface StoreInfo {
+  name: string;
+  email?: string;
+  phone?: string;
+}
+
 /** Semua teks dari pengguna wajib lewat sini sebelum masuk ke HTML */
 export function esc(value: unknown): string {
   return String(value ?? "")
@@ -53,8 +59,11 @@ interface Content {
   buttonLabel: string;
 }
 
-function render(order: EmailOrder, c: Content) {
-  const { brand, frontendUrl } = mailConfig;
+function render(order: EmailOrder, c: Content, store: StoreInfo) {
+  const brand = store.name;
+  const frontendUrl = mailConfig.frontendUrl;
+  const contact = [store.email, store.phone].filter((v): v is string => Boolean(v));
+
   const link = `${frontendUrl}/orders/${order.orderNumber}`;
   const a = order.address;
 
@@ -110,8 +119,9 @@ function render(order: EmailOrder, c: Content) {
           </p>
         </td></tr>
         <tr><td style="padding:16px 24px;background:#fafafa;font-size:12px;color:#737373;">
-          Email ini dikirim otomatis oleh ${esc(brand)}.
-        </td></tr>
+          Email ini dikirim otomatis oleh ${esc(brand)}.${
+            contact.length ? `<br>Pertanyaan? Hubungi kami: ${contact.map(esc).join(" &middot; ")}` : ""
+          }        </td></tr>
       </table>
     </td></tr>
   </table>
@@ -137,37 +147,50 @@ function render(order: EmailOrder, c: Content) {
     ...(order.courier ? [`Kurir: ${order.courier}`] : []),
     "",
     `${c.buttonLabel}: ${link}`,
+    ...(contact.length ? ["", `Pertanyaan? Hubungi kami: ${contact.join(" / ")}`] : []),    
   ].join("\n");
 
   return { subject: c.subject, html, text };
 }
 
-export function orderCreatedEmail(order: EmailOrder) {
-  return render(order, {
-    subject: `[${mailConfig.brand}] Pesanan ${order.orderNumber} dibuat`,
-    heading: "Terima kasih, pesananmu sudah dibuat",
-    intro: `Halo ${order.address.recipientName}, kami sudah menerima pesananmu dan menahan stoknya.`,
-    notice: `Selesaikan pembayaran sebelum ${dateTime(order.expiresAt)}. Pesanan yang tidak dibayar sampai batas waktu akan dibatalkan otomatis.`,
-    buttonLabel: "Bayar / lihat pesanan",
-  });
+export function orderCreatedEmail(order: EmailOrder, store: StoreInfo) {
+  return render(
+    order,
+    {
+      subject: `[${store.name}] Pesanan ${order.orderNumber} dibuat`,
+      heading: "Terima kasih, pesananmu sudah dibuat",
+      intro: `Halo ${order.address.recipientName}, kami sudah menerima pesananmu dan menahan stoknya.`,
+      notice: `Selesaikan pembayaran sebelum ${dateTime(order.expiresAt)}. Pesanan yang tidak dibayar sampai batas waktu akan dibatalkan otomatis.`,
+      buttonLabel: "Bayar / lihat pesanan",
+    },
+    store
+  );
 }
 
-export function paymentReceivedEmail(order: EmailOrder) {
-  return render(order, {
-    subject: `[${mailConfig.brand}] Pembayaran pesanan ${order.orderNumber} diterima`,
-    heading: "Pembayaran diterima",
-    intro: `Halo ${order.address.recipientName}, pembayaranmu sudah kami terima. Terima kasih!`,
-    notice: "Pesananmu akan segera kami proses. Kami akan mengabari lagi saat pesanan dikirim.",
-    buttonLabel: "Lihat pesanan",
-  });
+export function paymentReceivedEmail(order: EmailOrder, store: StoreInfo) {
+  return render(
+    order,
+    {
+      subject: `[${store.name}] Pembayaran pesanan ${order.orderNumber} diterima`,
+      heading: "Pembayaran diterima",
+      intro: `Halo ${order.address.recipientName}, pembayaranmu sudah kami terima. Terima kasih!`,
+      notice: "Pesananmu akan segera kami proses. Kami akan mengabari lagi saat pesanan dikirim.",
+      buttonLabel: "Lihat pesanan",
+    },
+    store
+  );
 }
 
-export function orderShippedEmail(order: EmailOrder, trackingNumber: string) {
-  return render(order, {
-    subject: `[${mailConfig.brand}] Pesanan ${order.orderNumber} sudah dikirim`,
-    heading: "Pesananmu sudah dikirim",
-    intro: `Halo ${order.address.recipientName}, pesananmu sudah diserahkan ke kurir.`,
-    notice: `${order.courier ? `Kurir: ${order.courier}. ` : ""}Nomor resi: ${trackingNumber}. Kamu dapat melacak paket di situs atau aplikasi kurir.`,
-    buttonLabel: "Lihat pesanan",
-  });
+export function orderShippedEmail(order: EmailOrder, trackingNumber: string, store: StoreInfo) {
+  return render(
+    order,
+    {
+      subject: `[${store.name}] Pesanan ${order.orderNumber} sudah dikirim`,
+      heading: "Pesananmu sudah dikirim",
+      intro: `Halo ${order.address.recipientName}, pesananmu sudah diserahkan ke kurir.`,
+      notice: `${order.courier ? `Kurir: ${order.courier}. ` : ""}Nomor resi: ${trackingNumber}. Kamu dapat melacak paket di situs atau aplikasi kurir.`,
+      buttonLabel: "Lihat pesanan",
+    },
+    store
+  );
 }
