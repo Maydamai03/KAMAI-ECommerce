@@ -122,3 +122,7 @@ export const saveBanners = (
   }[]
 ) => apiPut<AdminBanner[]>("/admin/settings/banners", { banners });
 export const deleteBanner = (id: string) => apiDelete<AdminBanner[]>(`/admin/settings/banners/${id}`);
+
+/* Logo toko */
+export const uploadLogo = (form: FormData) => apiUpload<{ logoUrl: string }>("/admin/settings/logo", form);
+export const removeLogo = () => apiDelete<{ logoUrl: null }>("/admin/settings/logo");

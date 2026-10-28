@@ -1,6 +1,5 @@
-import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { getCategories, getProducts } from "../services/catalog";
+import { getProducts } from "../services/catalog";
 import ProductCard from "../components/ProductCard";
 import ProductCardSkeleton from "../components/ProductCardSkeleton";
 import HeroCarousel from "../components/HeroCarousel";
@@ -16,10 +15,7 @@ export default function HomePage() {
     queryFn: () => getProducts({ sort: "newest", limit: 4 }),
   });
 
-  const categories = useQuery({
-    queryKey: ["categories"],
-    queryFn: getCategories,
-  });
+ 
 
   return (
     <div>
@@ -27,19 +23,6 @@ export default function HomePage() {
       <HeroCarousel />
 
       {/* Kategori */}
-      <section className="mx-auto max-w-7xl px-4 pt-12">
-        <div className="flex flex-wrap gap-3">
-          {categories.data?.map((c) => (
-            <Link
-              key={c.id}
-              to={`/products?category=${c.slug}`}
-              className="border border-neutral-300 px-4 py-2 text-sm hover:border-black"
-            >
-              {c.name}
-            </Link>
-          ))}
-        </div>
-      </section>
 
       <ProductSection title="Populer Product" query={featured} />
       <ProductSection title="New Arrivals" query={latest} />

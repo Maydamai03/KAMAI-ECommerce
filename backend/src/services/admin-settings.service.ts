@@ -7,8 +7,7 @@ import { clearManualConfigCache, manualProvider } from "../shipping/manual.provi
 import { findDistrict } from "../shipping/regions";
 import { blankToUndefined } from "../lib/slug";
 import { clearShippingCaches, getShippingOrigin } from "./shipping.service";
-import { getStoreProfile, optionalPhone, saveStoreProfile, profileSchema } from "./store-settings.service";
-
+import { getLogoUrl, getStoreProfile, optionalPhone, saveStoreProfile, profileSchema } from "./store-settings.service";
 export { profileSchema, manualConfigSchema };
 
 /* Alamat gudang */
@@ -41,8 +40,9 @@ function isKnownArea(areaId: string): boolean {
 }
 
 export async function getAdminSettings() {
-  const [profile, originRow, manualRow] = await Promise.all([
+    const [profile, logoUrl, originRow, manualRow] = await Promise.all([
     getStoreProfile(),
+    getLogoUrl(),
     prisma.storeSetting.findUnique({ where: { key: "shipping_origin" } }),
     prisma.storeSetting.findUnique({ where: { key: "shipping_manual" } }),
   ]);
@@ -70,7 +70,7 @@ export async function getAdminSettings() {
     }
   }
 
-  return { provider: shippingConfig.provider, profile, origin, originProblem, manual, manualError };
+  return { provider: shippingConfig.provider, profile, logoUrl, origin, originProblem, manual, manualError };
 }
 
 export async function updateProfile(input: z.infer<typeof profileSchema>) {

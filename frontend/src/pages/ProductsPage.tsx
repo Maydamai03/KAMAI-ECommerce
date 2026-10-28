@@ -6,7 +6,9 @@ import type { ProductListParams } from "../services/catalog";
 import ProductCard from "../components/ProductCard";
 import ProductCardSkeleton from "../components/ProductCardSkeleton";
 import Pagination from "../components/Pagination";
-import { formatRupiah } from "../lib/format";
+import GlassSelect from "../components/GlassSelect";
+import FilterPanel, { PRICE_RANGES, priceKey } from "../components/FilterPanel";
+import { CloseIcon, FilterIcon, SearchIcon } from "../components/icons";
 
 const SORTS = [
   { value: "newest", label: "Terbaru" },
@@ -14,14 +16,10 @@ const SORTS = [
   { value: "price_desc", label: "Harga: tinggi ke rendah" },
 ] as const;
 
-const PRICE_RANGES = [
-  { label: "Di bawah Rp200.000", min: undefined, max: 199999 },
-  { label: "Rp200.000 - Rp349.000", min: 200000, max: 349000 },
-  { label: "Rp350.000 ke atas", min: 350000, max: undefined },
-];
+const COLLECTIONS = { new: "Rilis Terbaru", popular: "Populer" } as const;
+type Collection = keyof typeof COLLECTIONS;
 
-const LIMIT = 10;
-// ubah buat pagination
+const LIMIT = 12;
 
 export default function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -33,10 +31,13 @@ export default function ProductsPage() {
   const minPrice = searchParams.get("minPrice") ?? undefined;
   const maxPrice = searchParams.get("maxPrice") ?? undefined;
   const q = searchParams.get("q") ?? undefined;
+  const rawCollection = searchParams.get("collection");
+  const collection: Collection | undefined =
+    rawCollection === "new" || rawCollection === "popular" ? rawCollection : undefined;
   const sortParam = searchParams.get("sort");
-  const sort = SORTS.some((s) => s.value === sortParam)
-    ? (sortParam as ProductListParams["sort"])
-    : "newest";
+  const sort = (SORTS.some((s) => s.value === sortParam) ? sortParam : "newest") as NonNullable<
+    ProductListParams["sort"]
+  >;
   const page = Math.max(1, Number(searchParams.get("page")) || 1);
 
   function update(changes: Record<string, string | undefined>, resetPage = true) {
@@ -49,10 +50,6 @@ export default function ProductsPage() {
     setSearchParams(next);
   }
 
-  function toggle(key: string, current: string | undefined, value: string) {
-    update({ [key]: current === value ? undefined : value });
-  }
-
   function resetFilters() {
     setSearchParams(new URLSearchParams());
   }
@@ -61,7 +58,7 @@ export default function ProductsPage() {
   const options = useQuery({ queryKey: ["filter-options"], queryFn: getFilterOptions });
 
   const products = useQuery({
-    queryKey: ["products", { category, size, color, minPrice, maxPrice, q, sort, page }],
+    queryKey: ["products", { category, size, color, minPrice, maxPrice, q, sort, page, collection }],
     queryFn: () =>
       getProducts({
         category,
@@ -71,34 +68,49 @@ export default function ProductsPage() {
         maxPrice: maxPrice ? Number(maxPrice) : undefined,
         q,
         sort,
+        featured: collection === "popular" ? "true" : undefined,
         page,
         limit: LIMIT,
       }),
     placeholderData: keepPreviousData,
   });
 
-  const activeFilterCount = [category, size, color, minPrice || maxPrice, q].filter(Boolean).length;
   const categoryName = categories.data?.find((c) => c.slug === category)?.name;
+  const activePriceKey = priceKey(minPrice, maxPrice);
+  const activePrice = PRICE_RANGES.find((r) => r.key === activePriceKey);
   const pagination = products.data?.pagination;
+
+  const chips: { key: string; label: string; remove: () => void }[] = [];
+  if (collection) {
+    chips.push({ key: "collection", label: COLLECTIONS[collection], remove: () => update({ collection: undefined }) });
+  }
+  if (category) {
+    chips.push({ key: "category", label: categoryName ?? category, remove: () => update({ category: undefined }) });
+  }
+  if (size) chips.push({ key: "size", label: `Ukuran ${size}`, remove: () => update({ size: undefined }) });
+  if (color) chips.push({ key: "color", label: `Warna ${color}`, remove: () => update({ color: undefined }) });
+  if (minPrice || maxPrice) {
+    chips.push({
+      key: "price",
+      label: activePrice?.label ?? "Rentang harga",
+      remove: () => update({ minPrice: undefined, maxPrice: undefined }),
+    });
+  }
+  if (q) chips.push({ key: "q", label: `"${q}"`, remove: () => update({ q: undefined }) });
+
+  const title = collection ? COLLECTIONS[collection] : (categoryName ?? "Semua Produk");
 
   function goToPage(next: number) {
     update({ page: next > 1 ? String(next) : undefined }, false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  const chip = (active: boolean) =>
-    `border px-3 py-1.5 text-sm transition-colors ${
-      active ? "border-black bg-black text-white" : "border-neutral-300 hover:border-black"
-    }`;
-
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
-      <h1 className="text-3xl font-bold">{categoryName ?? "Semua Produk"}</h1>
-      {pagination && (
-        <p className="mt-1 text-sm text-neutral-500">{pagination.total} produk</p>
-      )}
+      <h1 className="text-3xl font-bold">{title}</h1>
+      {pagination && <p className="mt-1 text-sm text-neutral-500">{pagination.total} produk</p>}
 
-      {/* Bar atas: cari + urutkan + tombol filter (mobile) */}
+      {/* Bar atas: cari, urutkan, filter (mobile) */}
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
         <form
           className="flex flex-1 gap-2"
@@ -108,127 +120,92 @@ export default function ProductsPage() {
             update({ q: value || undefined });
           }}
         >
-          <input
-            key={q ?? ""}
-            name="q"
-            defaultValue={q}
-            placeholder="Cari produk..."
-            className="w-full border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-black"
-          />
-          <button type="submit" className="bg-black px-4 py-2 text-sm font-medium text-white">
+          <div className="relative flex-1">
+            <SearchIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+            <input
+              key={q ?? ""}
+              name="q"
+              defaultValue={q}
+              placeholder="Cari produk..."
+              className="w-full rounded-full border border-neutral-300 bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:border-black"
+            />
+          </div>
+          <button
+            type="submit"
+            className="rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-800"
+          >
             Cari
           </button>
         </form>
 
         <div className="flex gap-2">
-          <select
-            value={sort}
-            onChange={(e) => update({ sort: e.target.value === "newest" ? undefined : e.target.value })}
-            className="flex-1 border border-neutral-300 px-3 py-2 text-sm sm:flex-none"
-            aria-label="Urutkan"
-          >
-            {SORTS.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
+          <div className="flex-1 sm:w-60 sm:flex-none">
+            <GlassSelect
+              label="Urutkan"
+              value={sort}
+              options={SORTS}
+              onChange={(value) => update({ sort: value === "newest" ? undefined : value })}
+            />
+          </div>
 
           <button
             type="button"
             onClick={() => setShowFilters((v) => !v)}
-            className="border border-neutral-300 px-4 py-2 text-sm md:hidden"
+            aria-expanded={showFilters}
+            className="inline-flex items-center gap-2 rounded-full border border-neutral-300 px-4 py-2.5 text-sm font-medium md:hidden"
           >
-            Filter{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+            <FilterIcon className="h-4 w-4" />
+            Filter{chips.length > 0 ? ` (${chips.length})` : ""}
           </button>
         </div>
       </div>
 
-      <div className="mt-8 grid gap-8 md:grid-cols-[240px_1fr]">
-        {/* Panel filter */}
-        <aside className={`${showFilters ? "block" : "hidden"} space-y-6 md:block`}>
-          <div>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Kategori</h2>
-            <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => update({ category: undefined })} className={chip(!category)}>
-                Semua
+      {/* Filter aktif */}
+      {chips.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          {chips.map((c) => (
+            <span
+              key={c.key}
+              className="inline-flex items-center gap-1.5 rounded-full bg-neutral-100 py-1 pl-3 pr-1.5 text-xs text-neutral-800"
+            >
+              {c.label}
+              <button
+                type="button"
+                onClick={c.remove}
+                aria-label={`Hapus filter ${c.label}`}
+                className="rounded-full p-0.5 hover:bg-neutral-300"
+              >
+                <CloseIcon className="h-3.5 w-3.5" />
               </button>
-              {categories.data?.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => toggle("category", category, c.slug)}
-                  className={chip(category === c.slug)}
-                >
-                  {c.name}
-                </button>
-              ))}
-            </div>
-          </div>
+            </span>
+          ))}
+          <button type="button" onClick={resetFilters} className="text-xs text-neutral-500 underline hover:text-black">
+            Hapus semua
+          </button>
+        </div>
+      )}
 
-          <div>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Ukuran</h2>
-            <div className="flex flex-wrap gap-2">
-              {options.data?.sizes.map((s) => (
-                <button key={s} type="button" onClick={() => toggle("size", size, s)} className={chip(size === s)}>
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Warna</h2>
-            <div className="flex flex-wrap gap-2">
-              {options.data?.colors.map((c) => (
-                <button key={c} type="button" onClick={() => toggle("color", color, c)} className={chip(color === c)}>
-                  {c}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide">Harga</h2>
-            <div className="flex flex-col gap-2">
-              {PRICE_RANGES.map((r) => {
-                const active =
-                  (minPrice ?? "") === (r.min !== undefined ? String(r.min) : "") &&
-                  (maxPrice ?? "") === (r.max !== undefined ? String(r.max) : "");
-                return (
-                  <button
-                    key={r.label}
-                    type="button"
-                    onClick={() =>
-                      update(
-                        active
-                          ? { minPrice: undefined, maxPrice: undefined }
-                          : {
-                              minPrice: r.min !== undefined ? String(r.min) : undefined,
-                              maxPrice: r.max !== undefined ? String(r.max) : undefined,
-                            }
-                      )
-                    }
-                    className={`${chip(active)} text-left`}
-                  >
-                    {r.label}
-                  </button>
-                );
-              })}
-            </div>
-            {options.data && (
-              <p className="mt-2 text-xs text-neutral-500">
-                Harga mulai {formatRupiah(options.data.minPrice)}
-              </p>
-            )}
-          </div>
-
-          {activeFilterCount > 0 && (
-            <button type="button" onClick={resetFilters} className="text-sm underline">
-              Hapus semua filter
-            </button>
-          )}
-        </aside>
+      <div className="mt-8 grid gap-8 md:grid-cols-[260px_1fr]">
+        <FilterPanel
+          className={showFilters ? "block" : "hidden md:block"}
+          categories={categories.data ?? []}
+          options={options.data}
+          category={category}
+          size={size}
+          color={color}
+          price={activePriceKey}
+          activeCount={chips.length}
+          onCategory={(slug) => update({ category: slug })}
+          onSize={(value) => update({ size: value })}
+          onColor={(value) => update({ color: value })}
+          onPrice={(range) =>
+            update({
+              minPrice: range?.min !== undefined ? String(range.min) : undefined,
+              maxPrice: range?.max !== undefined ? String(range.max) : undefined,
+            })
+          }
+          onReset={resetFilters}
+        />
 
         {/* Hasil */}
         <section>
@@ -237,12 +214,11 @@ export default function ProductsPage() {
           )}
 
           <div
-            className={`grid grid-cols-2 gap-4 lg:grid-cols-3 md:gap-6 ${
+            className={`grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-3 ${
               products.isPlaceholderData ? "opacity-60" : ""
             }`}
           >
-            {products.isLoading &&
-              Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)}
+            {products.isLoading && Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)}
             {products.data?.items.map((p) => <ProductCard key={p.id} product={p} />)}
           </div>
 

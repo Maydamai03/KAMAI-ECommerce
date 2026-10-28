@@ -31,7 +31,7 @@ async save({ buffer, folder }) {    init();
         cloudinary.uploader
           .upload_stream(
             {
-              folder: folder === "banners" ? `${storageConfig.cloudinaryRoot}/banners` : storageConfig.cloudinaryFolder,              resource_type: "image",
+              folder: folder && folder !== "products" ? `${storageConfig.cloudinaryRoot}/${folder}` : storageConfig.cloudinaryFolder,              
               unique_filename: true,
               overwrite: false,
             },

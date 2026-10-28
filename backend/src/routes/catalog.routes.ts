@@ -7,7 +7,7 @@ import {
   getFilterOptions,
 } from "../services/product.service";
 import { listCategories } from "../services/category.service";
-import { getStoreProfile } from "../services/store-settings.service";
+import { getPublicStore } from "../services/store-settings.service";
 import { listPublicBanners } from "../services/banner.service";
 
 type Handler = (req: Request, res: Response) => Promise<void>;
@@ -40,7 +40,7 @@ catalogRouter.get(
 catalogRouter.get(
   "/store",
   wrap(async (_req, res) => {
-    res.json({ success: true, data: await getStoreProfile() });
+    res.json({ success: true, data: await getPublicStore() });
   })
 );
 

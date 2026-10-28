@@ -1,5 +1,4 @@
-export type StorageFolder = "products" | "banners";
-
+export type StorageFolder = "products" | "banners" | "branding";
 export interface StoredImage {
   url: string;
   publicId: string;

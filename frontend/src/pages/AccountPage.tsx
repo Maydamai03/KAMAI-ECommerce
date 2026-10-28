@@ -12,14 +12,16 @@ import Pagination from "../components/Pagination";
 import { getMyOrders } from "../services/orders";
 import { formatDateTime, formatRupiah } from "../lib/format";
 import { STATUS_LABEL, STATUS_STYLE } from "../lib/orderStatus";
+import { LogOutIcon } from "../components/icons";
 
 type Mode = { type: "closed" } | { type: "new" } | { type: "edit"; address: Address };
 
 export default function AccountPage() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, logout } = useAuth();
   const { list, create, update, remove } = useAddresses(Boolean(user));
   const [mode, setMode] = useState<Mode>({ type: "closed" });
   const [actionError, setActionError] = useState<string | null>(null);
+  
 
   const [ordersPage, setOrdersPage] = useState(1);
   const myOrders = useQuery({
@@ -28,12 +30,19 @@ export default function AccountPage() {
     enabled: Boolean(user),
     staleTime: 0, // selalu segar saat halaman dibuka
   });
+  const [leaving, setLeaving] = useState(false);
+
 
   if (isLoading) {
     return <div className="mx-auto max-w-3xl px-4 py-12 text-sm text-neutral-500">Memuat...</div>;
   }
-  if (!user) return <Navigate to="/login" state={{ from: "/account" }} replace />;
-
+  if (!user) {
+    return leaving ? (
+      <Navigate to="/" replace />
+    ) : (
+      <Navigate to="/login" state={{ from: "/account" }} replace />
+    );
+  }
   async function handleDelete(address: Address) {
     if (!window.confirm("Hapus alamat ini?")) return;
     setActionError(null);
@@ -57,8 +66,21 @@ export default function AccountPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="text-3xl font-bold">Akun Saya</h1>
-
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-3xl font-bold">Akun Saya</h1>
+        <button
+          type="button"
+          onClick={() => {
+            setLeaving(true);
+            logout.mutate(undefined, { onError: () => setLeaving(false) });
+          }}
+          disabled={logout.isPending}
+          className="inline-flex items-center gap-2 rounded-full bg-neutral-200 px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-300 disabled:opacity-50"
+        >
+          <LogOutIcon className="h-4 w-4" />
+          Logout
+        </button>
+      </div>
       <section className="mt-6 border border-neutral-200 p-5">
         <h2 className="text-sm font-semibold uppercase tracking-wide">Profil</h2>
         <p className="mt-3 text-sm">{user.name}</p>
