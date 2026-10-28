@@ -389,6 +389,7 @@ export interface StoreProfile {
   whatsapp?: string;
   address?: string;
   hours?: string;
+  logoUrl?: string | null;
 }
 
 export interface StoreOrigin {
@@ -441,6 +442,7 @@ export interface AdminSettings {
   originProblem: string | null;
   manual: ManualConfig | null;
   manualError: string | null;
+  logoUrl: string | null;
 }
 
 export interface PublicBanner {

@@ -61,6 +61,7 @@ import {
   listAdminBanners,
   updateBanners,
 } from "../services/banner.service";
+import { removeStoreLogo, setStoreLogo } from "../services/store-settings.service";
 
 type Handler = (req: Request, res: Response) => Promise<void>;
 
@@ -333,5 +334,29 @@ adminRouter.delete(
   "/settings/banners/:id",
   wrap(async (req, res) => {
     res.json({ success: true, data: await deleteBanner(String(req.params.id)) });
+  })
+);
+
+/* Logo toko */
+
+const logoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: storageConfig.maxFileBytes, files: 1 },
+});
+
+adminRouter.post(
+  "/settings/logo",
+  logoUpload.single("logo"),
+  wrap(async (req, res) => {
+    const logoUrl = await setStoreLogo(req.file);
+    res.status(201).json({ success: true, data: { logoUrl } });
+  })
+);
+
+adminRouter.delete(
+  "/settings/logo",
+  wrap(async (_req, res) => {
+    await removeStoreLogo();
+    res.json({ success: true, data: { logoUrl: null } });
   })
 );
