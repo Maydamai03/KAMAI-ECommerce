@@ -32,6 +32,12 @@ import AdminOrderDetailPage from "./pages/admin/AdminOrderDetailPage";
 
 import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
 
+import AboutPage from "./pages/static/AboutPage";
+import ContactPage from "./pages/static/ContactPage";
+import FaqPage from "./pages/static/FaqPage";
+import PolicyPage from "./pages/static/PolicyPage";
+import PrivacyPage from "./pages/static/PrivacyPage";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 60_000, refetchOnWindowFocus: false, retry: 1 },
@@ -51,6 +57,11 @@ const router = createBrowserRouter([
       { path: "account", element: <AccountPage /> },
       { path: "checkout", element: <CheckoutPage /> },
       { path: "orders/:orderNumber", element: <OrderPage /> },
+      { path: "about", element: <AboutPage /> },
+      { path: "contact", element: <ContactPage /> },
+      { path: "faq", element: <FaqPage /> },
+      { path: "policy", element: <PolicyPage /> },
+      { path: "privacy", element: <PrivacyPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],
   },

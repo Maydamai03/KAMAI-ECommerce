@@ -11,6 +11,7 @@ interface Values {
   phone: string;
   whatsapp: string;
   address: string;
+  hours: string;
 }
 
 const inputClass =
@@ -32,6 +33,7 @@ export default function ProfileForm({ profile }: { profile: StoreProfile }) {
       phone: profile.phone ?? "",
       whatsapp: profile.whatsapp ?? "",
       address: profile.address ?? "",
+      hours: profile.hours ?? "",
     },
   });
 
@@ -113,14 +115,14 @@ export default function ProfileForm({ profile }: { profile: StoreProfile }) {
       </div>
 
       <div>
-        <label htmlFor="store-address" className="mb-1 block text-sm font-medium">Alamat toko</label>
-        <textarea
-          id="store-address"
-          rows={2}
+        <label htmlFor="store-hours" className="mb-1 block text-sm font-medium">Jam layanan</label>
+        <input
+          id="store-hours"
+          placeholder="Senin sampai Jumat, 09.00 sampai 17.00 WIB"
           className={inputClass}
-          {...register("address", { maxLength: { value: 300, message: "Maksimal 300 karakter" } })}
+          {...register("hours", { maxLength: { value: 120, message: "Maksimal 120 karakter" } })}
         />
-        {errors.address && <p className="mt-1 text-xs text-red-600">{errors.address.message}</p>}
+        {errors.hours && <p className="mt-1 text-xs text-red-600">{errors.hours.message}</p>}
       </div>
 
       {message && (

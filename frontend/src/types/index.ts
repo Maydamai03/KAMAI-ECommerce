@@ -388,6 +388,7 @@ export interface StoreProfile {
   phone?: string;
   whatsapp?: string;
   address?: string;
+  hours?: string;
 }
 
 export interface StoreOrigin {
@@ -440,4 +441,23 @@ export interface AdminSettings {
   originProblem: string | null;
   manual: ManualConfig | null;
   manualError: string | null;
+}
+
+export interface PublicBanner {
+  id: string;
+  url: string;
+  title: string | null;
+  subtitle: string | null;
+  buttonLabel: string | null;
+  linkUrl: string | null;
+}
+
+export interface AdminBanner {
+  id: string;
+  url: string;
+  title?: string;
+  subtitle?: string;
+  buttonLabel?: string;
+  linkUrl?: string;
+  isActive: boolean;
 }

@@ -53,6 +53,14 @@ import {
   updateOrigin,
   updateProfile,
 } from "../services/admin-settings.service";
+import {
+  bannerCreateSchema,
+  bannersUpdateSchema,
+  createBanner,
+  deleteBanner,
+  listAdminBanners,
+  updateBanners,
+} from "../services/banner.service";
 
 type Handler = (req: Request, res: Response) => Promise<void>;
 
@@ -287,5 +295,43 @@ adminRouter.post(
   wrap(async (req, res) => {
     const input = previewSchema.parse(req.body);
     res.json({ success: true, data: await previewManualRates(input) });
+  })
+);
+
+/* Banner beranda */
+
+const bannerUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: storageConfig.maxFileBytes, files: 1 },
+});
+
+adminRouter.get(
+  "/settings/banners",
+  wrap(async (_req, res) => {
+    res.json({ success: true, data: await listAdminBanners() });
+  })
+);
+
+adminRouter.post(
+  "/settings/banners",
+  bannerUpload.single("image"),
+  wrap(async (req, res) => {
+    const input = bannerCreateSchema.parse(req.body ?? {});
+    res.status(201).json({ success: true, data: await createBanner(req.file, input) });
+  })
+);
+
+adminRouter.put(
+  "/settings/banners",
+  wrap(async (req, res) => {
+    const { banners } = bannersUpdateSchema.parse(req.body);
+    res.json({ success: true, data: await updateBanners(banners) });
+  })
+);
+
+adminRouter.delete(
+  "/settings/banners/:id",
+  wrap(async (req, res) => {
+    res.json({ success: true, data: await deleteBanner(String(req.params.id)) });
   })
 );

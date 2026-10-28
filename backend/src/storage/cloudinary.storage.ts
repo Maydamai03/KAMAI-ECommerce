@@ -25,15 +25,13 @@ const storageError = () =>
 export const cloudinaryStorageProvider: StorageProvider = {
   name: "cloudinary",
 
-  async save({ buffer }) {
-    init();
+async save({ buffer, folder }) {    init();
     try {
       const result = await new Promise<UploadApiResponse>((resolve, reject) => {
         cloudinary.uploader
           .upload_stream(
             {
-              folder: storageConfig.cloudinaryFolder,
-              resource_type: "image",
+              folder: folder === "banners" ? `${storageConfig.cloudinaryRoot}/banners` : storageConfig.cloudinaryFolder,              resource_type: "image",
               unique_filename: true,
               overwrite: false,
             },
