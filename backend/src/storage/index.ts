@@ -17,7 +17,7 @@ export async function removeStoredImage(publicId: string): Promise<void> {
   try {
     if (publicId.startsWith(LOCAL_PREFIX)) {
       await localStorageProvider.remove(publicId);
-    } else if (publicId.startsWith(`${storageConfig.cloudinaryFolder}/`)) {
+    } else if (publicId.startsWith(`${storageConfig.cloudinaryRoot}/`)) {
       await cloudinaryStorageProvider.remove(publicId);
     }
     // Selain itu (mis. gambar contoh dari seed) tidak ada berkas yang perlu dihapus

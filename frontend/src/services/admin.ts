@@ -19,6 +19,7 @@ import type {
   ShippingRate, 
   StoreOrigin, 
   StoreProfile,
+  AdminBanner,
 } from "../types";
 
 export const getAdminDashboard = () => apiGet<AdminDashboard>("/admin/dashboard");
@@ -106,3 +107,18 @@ export const resetManualRates = () => apiPost<ManualConfig>("/admin/settings/shi
 
 export const previewRates = (input: { areaId?: string; weightGram: number }) =>
   apiPost<ShippingRate[]>("/admin/settings/shipping-rates/preview", input);
+
+/* Banner beranda */
+export const getAdminBanners = () => apiGet<AdminBanner[]>("/admin/settings/banners");
+export const createBanner = (form: FormData) => apiUpload<AdminBanner[]>("/admin/settings/banners", form);
+export const saveBanners = (
+  banners: {
+    id: string;
+    isActive: boolean;
+    title: string;
+    subtitle: string;
+    buttonLabel: string;
+    linkUrl: string;
+  }[]
+) => apiPut<AdminBanner[]>("/admin/settings/banners", { banners });
+export const deleteBanner = (id: string) => apiDelete<AdminBanner[]>(`/admin/settings/banners/${id}`);

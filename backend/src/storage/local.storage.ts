@@ -4,20 +4,19 @@ import path from "node:path";
 import { storageConfig } from "../config/storage";
 import type { StorageProvider } from "./types";
 
-const SUBDIR = "products";
 export const LOCAL_PREFIX = "local/";
 
 export const localStorageProvider: StorageProvider = {
   name: "local",
 
-  async save({ buffer, ext }) {
+  async save({ buffer, ext, folder = "products" }) {
     const filename = `${randomUUID()}.${ext}`;
-    const dir = path.join(storageConfig.uploadDir, SUBDIR);
+    const dir = path.join(storageConfig.uploadDir, folder);
     await mkdir(dir, { recursive: true });
     await writeFile(path.join(dir, filename), buffer);
     return {
-      url: `${storageConfig.publicApiUrl}/uploads/${SUBDIR}/${filename}`,
-      publicId: `${LOCAL_PREFIX}${SUBDIR}/${filename}`,
+      url: `${storageConfig.publicApiUrl}/uploads/${folder}/${filename}`,
+      publicId: `${LOCAL_PREFIX}${folder}/${filename}`,
     };
   },
 

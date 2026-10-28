@@ -20,6 +20,7 @@ export const profileSchema = z.object({
   phone: optionalPhone,
   whatsapp: optionalPhone,
   address: z.preprocess(blankToUndefined, z.string().trim().max(300).optional()),
+  hours: z.preprocess(blankToUndefined, z.string().trim().max(120).optional()),
 });
 
 export type StoreProfile = z.infer<typeof profileSchema>;

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getCategories, getProducts } from "../services/catalog";
 import ProductCard from "../components/ProductCard";
 import ProductCardSkeleton from "../components/ProductCardSkeleton";
+import HeroCarousel from "../components/HeroCarousel";
 
 export default function HomePage() {
   const featured = useQuery({
@@ -23,20 +24,7 @@ export default function HomePage() {
   return (
     <div>
       {/* Hero */}
-      <section className="bg-neutral-900 text-white">
-        <div className="mx-auto max-w-7xl px-4 py-20 sm:py-28">
-          <p className="text-sm uppercase tracking-widest text-neutral-400">Koleksi Terbaru</p>
-          <h1 className="mt-3 max-w-xl text-4xl font-bold leading-tight sm:text-5xl">
-            Gaya santai untuk setiap hari.
-          </h1>
-          <Link
-            to="/products"
-            className="mt-8 inline-block bg-white px-6 py-3 text-sm font-semibold text-black hover:bg-neutral-200"
-          >
-            Belanja Sekarang
-          </Link>
-        </div>
-      </section>
+      <HeroCarousel />
 
       {/* Kategori */}
       <section className="mx-auto max-w-7xl px-4 pt-12">
@@ -53,8 +41,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      <ProductSection title="Produk Unggulan" query={featured} />
-      <ProductSection title="Baru Datang" query={latest} />
+      <ProductSection title="Populer Product" query={featured} />
+      <ProductSection title="New Arrivals" query={latest} />
     </div>
   );
 }

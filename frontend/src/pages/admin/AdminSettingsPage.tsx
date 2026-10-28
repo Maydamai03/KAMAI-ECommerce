@@ -3,6 +3,7 @@ import { getAdminSettings } from "../../services/admin";
 import ProfileForm from "../../components/admin/settings/ProfileForm";
 import OriginForm from "../../components/admin/settings/OriginForm";
 import ManualRatesEditor from "../../components/admin/settings/ManualRatesEditor";
+import BannersEditor from "../../components/admin/settings/BannersEditor";
 
 export default function AdminSettingsPage() {
   const settings = useQuery({
@@ -30,6 +31,7 @@ export default function AdminSettingsPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Pengaturan toko</h1>
       <ProfileForm profile={s.profile} />
+      <BannersEditor />
       <OriginForm origin={s.origin} problem={s.originProblem} />
       <ManualRatesEditor initial={s.manual} manualError={s.manualError} provider={s.provider} />
     </div>
