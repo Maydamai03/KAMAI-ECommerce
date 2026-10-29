@@ -18,6 +18,21 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     });
     return;
   }
+    const bodyErrorType = (err as { type?: string } | null)?.type;
+  if (bodyErrorType === "entity.parse.failed") {
+    res.status(400).json({
+      success: false,
+      error: { code: "INVALID_JSON", message: "Isi permintaan bukan JSON yang valid" },
+    });
+    return;
+  }
+  if (bodyErrorType === "entity.too.large") {
+    res.status(413).json({
+      success: false,
+      error: { code: "PAYLOAD_TOO_LARGE", message: "Ukuran permintaan terlalu besar" },
+    });
+    return;
+  }
     if (err instanceof multer.MulterError) {
     const message =
       err.code === "LIMIT_FILE_SIZE"

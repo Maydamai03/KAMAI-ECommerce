@@ -10,6 +10,9 @@ import {
 } from "../services/address.service";
 import { z } from "zod";
 import { listOrdersForUser } from "../services/order.service";
+import rateLimit from "express-rate-limit";
+import { COOKIE_NAME, cookieOptions, signToken } from "../lib/jwt";
+import { changePassword, passwordChangeSchema } from "../services/auth.service";
 
 type Handler = (req: Request, res: Response) => Promise<void>;
 
@@ -69,3 +72,26 @@ meRouter.get(
     res.json({ success: true, data });
   })
 );  
+
+const passwordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: { code: "TOO_MANY_REQUESTS", message: "Terlalu banyak percobaan. Coba lagi beberapa menit lagi." },
+  },
+});
+
+meRouter.put(
+  "/password",
+  passwordLimiter,
+  wrap(async (req, res) => {
+    const input = passwordChangeSchema.parse(req.body);
+    const user = await changePassword(req.user!.id, input);
+    // Sesi ini tetap berlaku lewat token baru; sesi lain (token lama) dicabut
+    res.cookie(COOKIE_NAME, signToken(user), cookieOptions);
+    res.json({ success: true, data: null });
+  })
+);
