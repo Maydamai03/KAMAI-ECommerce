@@ -1,33 +1,43 @@
-import "dotenv/config";
+import { env } from "./config/env"; // harus pertama: validasi lingkungan sebelum modul lain
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
-import { catalogRouter } from "./routes/catalog.routes";
+import { prisma } from "./lib/prisma";
+import { storageConfig } from "./config/storage";
+import { startExpiryJob } from "./jobs/expireOrders";
 import { errorHandler, notFoundHandler } from "./middlewares/errorHandler";
+import { globalLimiter, originGuard, requestLogger } from "./middlewares/security";
+import { adminRouter } from "./routes/admin.routes";
 import { authRouter } from "./routes/auth.routes";
 import { cartRouter } from "./routes/cart.routes";
+import { catalogRouter } from "./routes/catalog.routes";
 import { meRouter } from "./routes/me.routes";
 import { orderRouter } from "./routes/order.routes";
 import { paymentRouter } from "./routes/payment.routes";
-import { startExpiryJob } from "./jobs/expireOrders";
 import { shippingRouter } from "./routes/shipping.routes";
-import { adminRouter } from "./routes/admin.routes";
-import { storageConfig } from "./config/storage";
 
 const app = express();
+
 // Diperlukan agar IP asli terbaca di belakang ngrok/hosting (untuk rate limit)
 app.set("trust proxy", 1);
 
 app.use(helmet());
+if (env.isProduction) app.use(requestLogger);
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL ?? "http://localhost:5173",
+    origin: (origin, callback) => {
+      // Tanpa Origin (server ke server) diizinkan; selain itu harus ada di daftar
+      callback(null, !origin || env.allowedOrigins.includes(origin));
+    },
     credentials: true,
   })
 );
-app.use(express.json());
+
+app.use(express.json({ limit: "200kb" }));
 app.use(cookieParser());
+
 // Mode lokal: sajikan berkas unggahan (hanya untuk development)
 if (storageConfig.mode === "local") {
   app.use(
@@ -41,9 +51,17 @@ if (storageConfig.mode === "local") {
   );
 }
 
-app.get("/api/health", (_req, res) => {
-  res.json({ ok: true });
+// Health check (dipakai hosting): ikut memeriksa koneksi database
+app.get("/api/health", async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ ok: true });
+  } catch {
+    res.status(503).json({ ok: false });
+  }
 });
+
+app.use("/api", globalLimiter, originGuard);
 
 app.use("/api/auth", authRouter);
 app.use("/api/me", meRouter);
@@ -54,13 +72,31 @@ app.use("/api", orderRouter);
 app.use("/api", paymentRouter);
 app.use("/api", shippingRouter);
 
-
 // Harus paling bawah
 app.use("/api", notFoundHandler);
 app.use(errorHandler);
 
-const port = Number(process.env.PORT ?? 5000);
-app.listen(port, () => {
-  console.log(`API berjalan di http://localhost:${port}`);
+const server = app.listen(env.port, () => {
+  console.log(`API berjalan di http://localhost:${env.port} (${env.nodeEnv})`);
   startExpiryJob();
+});
+
+function shutdown(signal: string) {
+  console.log(`${signal} diterima, menutup server...`);
+  server.close(async () => {
+    await prisma.$disconnect().catch(() => undefined);
+    process.exit(0);
+  });
+  // Jaga-jaga bila ada koneksi yang menggantung
+  setTimeout(() => process.exit(1), 10_000).unref();
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("unhandledRejection", (reason) => {
+  console.error("[proses] unhandledRejection:", reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("[proses] uncaughtException:", err);
+  shutdown("uncaughtException");
 });

@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "../lib/api";
+import { apiGet, apiPost, apiPut } from "../lib/api";
 import type { User } from "../types";
 
 export interface RegisterInput {
@@ -27,4 +27,8 @@ export function logoutUser() {
 
 export function getMe() {
   return apiGet<{ user: User }>("/auth/me");
+}
+
+export function changePassword(input: { currentPassword: string; newPassword: string }) {
+  return apiPut<null>("/me/password", input);
 }

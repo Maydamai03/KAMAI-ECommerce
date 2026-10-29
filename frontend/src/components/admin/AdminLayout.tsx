@@ -41,6 +41,11 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-neutral-50">
+      {user.email === "admin@tokobaju.test" && (
+        <div role="alert" className="bg-orange-100 px-4 py-2 text-center text-sm text-orange-900">
+          Kamu masih memakai akun admin bawaan. Buat akun admin baru dengan password kuat sebelum toko dibuka.
+        </div>
+      )}
       <header className="bg-black text-white">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
           <Link to="/admin" className="font-bold tracking-tight">

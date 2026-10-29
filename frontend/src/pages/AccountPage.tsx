@@ -13,6 +13,7 @@ import { getMyOrders } from "../services/orders";
 import { formatDateTime, formatRupiah } from "../lib/format";
 import { STATUS_LABEL, STATUS_STYLE } from "../lib/orderStatus";
 import { LogOutIcon } from "../components/icons";
+import ChangePasswordForm from "../components/ChangePasswordForm";
 
 type Mode = { type: "closed" } | { type: "new" } | { type: "edit"; address: Address };
 
@@ -86,6 +87,11 @@ export default function AccountPage() {
         <p className="mt-3 text-sm">{user.name}</p>
         <p className="text-sm text-neutral-500">{user.email}</p>
         {user.phone && <p className="text-sm text-neutral-500">{user.phone}</p>}
+      </section>
+            <section className="mt-8 max-w-md">
+        <h2 className="text-xl font-bold">Keamanan</h2>
+        <p className="mb-4 mt-1 text-sm text-neutral-500">Ubah password akunmu secara berkala.</p>
+        <ChangePasswordForm />
       </section>
 
       <section className="mt-8">

@@ -38,6 +38,8 @@ import FaqPage from "./pages/static/FaqPage";
 import PolicyPage from "./pages/static/PolicyPage";
 import PrivacyPage from "./pages/static/PrivacyPage";
 
+import ErrorPage from "./pages/ErrorPage";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 60_000, refetchOnWindowFocus: false, retry: 1 },
@@ -46,7 +48,8 @@ const queryClient = new QueryClient({
 
 const router = createBrowserRouter([
   {
-    element: <Layout />,
+    element: <Layout />,    
+    errorElement: <ErrorPage />,
     children: [
       { index: true, element: <HomePage /> },
       { path: "products", element: <ProductsPage /> },
@@ -68,6 +71,7 @@ const router = createBrowserRouter([
     {
     path: "admin",
     element: <AdminLayout />,
+    errorElement: <ErrorPage />,
     children: [
       { index: true, element: <AdminDashboardPage /> },
       { path: "categories", element: <AdminCategoriesPage /> },

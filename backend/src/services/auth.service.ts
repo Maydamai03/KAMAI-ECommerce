@@ -71,3 +71,31 @@ export async function loginUser(input: z.infer<typeof loginSchema>) {
     role: user.role,
   };
 }
+
+export const passwordChangeSchema = z.object({
+  currentPassword: z.string().min(1, "Password saat ini wajib diisi").max(72),
+  newPassword: z.string().min(8, "Password baru minimal 8 karakter").max(72),
+});
+
+export async function changePassword(userId: string, input: z.infer<typeof passwordChangeSchema>) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new AppError(401, "UNAUTHORIZED", "Silakan login terlebih dahulu");
+
+  const ok = await bcrypt.compare(input.currentPassword, user.passwordHash);
+  if (!ok) throw new AppError(400, "WRONG_PASSWORD", "Password saat ini salah");
+
+  if (input.currentPassword === input.newPassword) {
+    throw new AppError(400, "SAME_PASSWORD", "Password baru harus berbeda dari password saat ini");
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      passwordHash: await bcrypt.hash(input.newPassword, 10),
+      // Mencabut semua sesi (token) yang dibuat sebelum saat ini
+      passwordChangedAt: new Date(),
+    },
+  });
+
+  return { id: user.id, role: user.role };
+}
