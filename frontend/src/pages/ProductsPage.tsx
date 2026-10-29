@@ -9,6 +9,8 @@ import Pagination from "../components/Pagination";
 import GlassSelect from "../components/GlassSelect";
 import FilterPanel, { PRICE_RANGES, priceKey } from "../components/FilterPanel";
 import { CloseIcon, FilterIcon, SearchIcon } from "../components/icons";
+import { useSeo } from "../hooks/usePageMeta";
+import { useStoreInfo } from "../hooks/useStoreInfo";
 
 const SORTS = [
   { value: "newest", label: "Terbaru" },
@@ -99,6 +101,16 @@ export default function ProductsPage() {
   if (q) chips.push({ key: "q", label: `"${q}"`, remove: () => update({ q: undefined }) });
 
   const title = collection ? COLLECTIONS[collection] : (categoryName ?? "Semua Produk");
+  const { data: store } = useStoreInfo();
+  const storeName = store?.name ?? "Kamai";
+  const filtered = Boolean(q || size || color || minPrice || maxPrice || collection || sortParam || page > 1);
+  useSeo({
+    title: `${title} | ${storeName}`,
+    description: `Belanja ${title.toLowerCase()} di ${storeName}. Pilihan ukuran dan warna lengkap.`,
+    path: category ? `/products?category=${category}` : "/products",
+    // Kombinasi filter dan halaman lanjutan tidak perlu muncul di hasil pencarian
+    robots: filtered ? "noindex, follow" : undefined,
+  });
 
   function goToPage(next: number) {
     update({ page: next > 1 ? String(next) : undefined }, false);
@@ -128,6 +140,7 @@ export default function ProductsPage() {
               defaultValue={q}
               placeholder="Cari produk..."
               className="w-full rounded-full border border-neutral-300 bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:border-black"
+              aria-label="Cari produk"
             />
           </div>
           <button
@@ -219,7 +232,7 @@ export default function ProductsPage() {
             }`}
           >
             {products.isLoading && Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)}
-            {products.data?.items.map((p) => <ProductCard key={p.id} product={p} />)}
+            {products.data?.items.map((p, i) => <ProductCard key={p.id} product={p} priority={i < 4} />)}
           </div>
 
           {products.data && products.data.items.length === 0 && (

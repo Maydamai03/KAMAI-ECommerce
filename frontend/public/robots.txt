@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /cart
+Disallow: /checkout
+Disallow: /account
+Disallow: /orders/
+Disallow: /login
+Disallow: /register
+
+# GANTI saat deploy dengan alamat API yang sebenarnya, mis. https://api.namadomain.com/api/sitemap.xml
+Sitemap: http://localhost:5000/api/sitemap.xml

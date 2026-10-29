@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { formatRupiah } from "../lib/format";
 import { MAX_PER_LINE } from "../store/cart";
 import type { CartLineView } from "../hooks/useCartLines";
+import { sizedImage } from "../lib/image";
 
 interface Props {
   line: CartLineView;
@@ -44,7 +45,7 @@ export default function CartLineItem({ line, compact, onQuantity, onRemove, onNa
     <div className="flex gap-4 py-4">
       <Link to={`/products/${data.slug}`} onClick={onNavigate} className={`${thumb} shrink-0 overflow-hidden bg-neutral-100`}>
         {data.image && (
-          <img src={data.image} alt={data.name} loading="lazy" className="h-full w-full object-cover" />
+          <img src={sizedImage(data.image, 240)} alt={data.name} loading="lazy" className="h-full w-full object-cover" />
         )}
       </Link>
 

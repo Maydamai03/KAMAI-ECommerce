@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useAuth } from "../hooks/useAuth";
 import { ApiError } from "../lib/api";
+import { usePrivatePage } from "../hooks/usePageMeta";
 
 interface FormValues {
   email: string;
@@ -10,6 +11,7 @@ interface FormValues {
 }
 
 export default function LoginPage() {
+  usePrivatePage("Masuk");
   const { user, login } = useAuth();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from ?? "/";

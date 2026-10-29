@@ -3,8 +3,10 @@ import { useCartLines } from "../hooks/useCartLines";
 import { useCartStore } from "../store/cart";
 import { formatRupiah } from "../lib/format";
 import CartLineItem from "../components/CartLineItem";
+import { usePrivatePage } from "../hooks/usePageMeta";
 
 export default function CartPage() {
+  usePrivatePage("Keranjang");
   const cart = useCartLines();
   const notice = useCartStore((s) => s.notice);
   const setNotice = useCartStore((s) => s.setNotice);

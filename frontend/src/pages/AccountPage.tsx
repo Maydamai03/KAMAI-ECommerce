@@ -14,10 +14,12 @@ import { formatDateTime, formatRupiah } from "../lib/format";
 import { STATUS_LABEL, STATUS_STYLE } from "../lib/orderStatus";
 import { LogOutIcon } from "../components/icons";
 import ChangePasswordForm from "../components/ChangePasswordForm";
+import { usePrivatePage } from "../hooks/usePageMeta";
 
 type Mode = { type: "closed" } | { type: "new" } | { type: "edit"; address: Address };
 
 export default function AccountPage() {
+  usePrivatePage("Akun Saya");
   const { user, isLoading, logout } = useAuth();
   const { list, create, update, remove } = useAddresses(Boolean(user));
   const [mode, setMode] = useState<Mode>({ type: "closed" });

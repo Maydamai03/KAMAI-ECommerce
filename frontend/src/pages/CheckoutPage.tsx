@@ -13,8 +13,10 @@ import { rememberOrderEmail } from "../lib/orderEmail";
 import { createOrder } from "../services/orders";
 import { getShippingRates } from "../services/shipping";
 import type { AddressFormValues } from "../types";
+import { usePrivatePage } from "../hooks/usePageMeta";
 
 export default function CheckoutPage() {
+  usePrivatePage("Checkout");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user, isLoading: authLoading } = useAuth();

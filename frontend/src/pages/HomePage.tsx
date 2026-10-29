@@ -3,8 +3,20 @@ import { getProducts } from "../services/catalog";
 import ProductCard from "../components/ProductCard";
 import ProductCardSkeleton from "../components/ProductCardSkeleton";
 import HeroCarousel from "../components/HeroCarousel";
+import { useSeo } from "../hooks/usePageMeta";
+import { useStoreInfo } from "../hooks/useStoreInfo";
 
 export default function HomePage() {
+  // Semua hook ada DI DALAM fungsi ini, di bagian paling atas
+  const { data: store } = useStoreInfo();
+  const storeName = store?.name ?? "Kamai";
+
+  useSeo({
+    title: `${storeName} | Toko Pakaian Online`,
+    description: `Belanja pakaian terbaru di ${storeName}. Pilihan ukuran dan warna lengkap, bayar dengan mudah.`,
+    path: "/",
+  });
+
   const featured = useQuery({
     queryKey: ["products", "featured"],
     queryFn: () => getProducts({ featured: "true", limit: 8 }),
@@ -15,17 +27,11 @@ export default function HomePage() {
     queryFn: () => getProducts({ sort: "newest", limit: 4 }),
   });
 
- 
-
   return (
     <div>
-      {/* Hero */}
       <HeroCarousel />
-
-      {/* Kategori */}
-
-      <ProductSection title="Populer Product" query={featured} />
-      <ProductSection title="New Arrivals" query={latest} />
+      <ProductSection title="Produk Unggulan" query={featured} />
+      <ProductSection title="Baru Datang" query={latest} />
     </div>
   );
 }
@@ -46,8 +52,7 @@ function ProductSection({
       )}
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6">
-        {query.isLoading &&
-          Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)}
+        {query.isLoading && Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)}
         {query.data?.items.map((p) => <ProductCard key={p.id} product={p} />)}
       </div>
     </section>
