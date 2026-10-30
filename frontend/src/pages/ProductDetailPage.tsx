@@ -28,14 +28,17 @@ export default function ProductDetailPage() {
       !(err instanceof ApiError && err.status === 404) && count < 1,
   });
 
-  if (isLoading) {
+    if (isLoading) {
     return (
-      <div className="mx-auto grid max-w-7xl animate-pulse gap-8 px-4 py-8 md:grid-cols-2">
-        <div className="aspect-[4/5] bg-neutral-200" />
-        <div className="space-y-4">
-          <div className="h-8 w-2/3 bg-neutral-200" />
-          <div className="h-6 w-1/4 bg-neutral-200" />
-          <div className="h-32 bg-neutral-200" />
+      <div className="mx-auto max-w-7xl px-4 py-8" aria-busy="true">
+        <div className="mb-6 h-5 w-56 animate-pulse bg-neutral-200" />
+        <div className="grid animate-pulse gap-8 md:grid-cols-2 md:gap-12">
+          <div className="aspect-[4/5] bg-neutral-200" />
+          <div className="space-y-4">
+            <div className="h-9 w-2/3 bg-neutral-200" />
+            <div className="h-8 w-1/4 bg-neutral-200" />
+            <div className="h-48 bg-neutral-200" />
+          </div>
         </div>
       </div>
     );

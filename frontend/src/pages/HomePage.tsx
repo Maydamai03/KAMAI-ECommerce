@@ -30,7 +30,7 @@ export default function HomePage() {
   return (
     <div>
       <HeroCarousel />
-      <ProductSection title="Produk Unggulan" query={featured} />
+      <ProductSection title="Produk Unggulan" query={featured} priorityCount={4} />
       <ProductSection title="Baru Datang" query={latest} />
     </div>
   );
@@ -39,9 +39,11 @@ export default function HomePage() {
 function ProductSection({
   title,
   query,
+  priorityCount = 0,
 }: {
   title: string;
   query: ReturnType<typeof useQuery<Awaited<ReturnType<typeof getProducts>>>>;
+  priorityCount?: number;
 }) {
   return (
     <section className="mx-auto max-w-7xl px-4 pt-12">
@@ -53,7 +55,7 @@ function ProductSection({
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6">
         {query.isLoading && Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)}
-        {query.data?.items.map((p) => <ProductCard key={p.id} product={p} />)}
+        {query.data?.items.map((p, i) => <ProductCard key={p.id} product={p} priority={i < priorityCount} />)}
       </div>
     </section>
   );

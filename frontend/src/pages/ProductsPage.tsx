@@ -120,8 +120,9 @@ export default function ProductsPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <h1 className="text-3xl font-bold">{title}</h1>
-      {pagination && <p className="mt-1 text-sm text-neutral-500">{pagination.total} produk</p>}
-
+      <p className="mt-1 h-5 text-sm text-neutral-500">
+        {pagination ? `${pagination.total} produk` : "\u00A0"}
+      </p>
       {/* Bar atas: cari, urutkan, filter (mobile) */}
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
         <form

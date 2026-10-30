@@ -16,7 +16,7 @@ export default function Layout() {
         Lewati ke konten
       </a>
       <Navbar />
-      <main id="konten" tabIndex={-1} className="flex-1 outline-none">
+      <main id="konten" tabIndex={-1} className="min-h-[calc(100vh-4rem)] flex-1 outline-none">
         <Suspense fallback={<PageFallback />}>
           <Outlet />
         </Suspense>

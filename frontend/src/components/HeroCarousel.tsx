@@ -123,6 +123,7 @@ export default function HeroCarousel() {
               loading={i === 0 ? "eager" : "lazy"}
               decoding="async"
               className="h-full w-full object-cover object-center"
+              fetchPriority={i === 0 ? "high" : undefined}
             />
 
             {hasText && (
