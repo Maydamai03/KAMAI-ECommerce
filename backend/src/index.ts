@@ -52,6 +52,12 @@ if (storageConfig.mode === "local") {
   );
 }
 
+// Tanpa database: untuk health check hosting. Memeriksa DB tiap beberapa detik akan
+// menjaga database serverless tetap "bangun" terus dan menghabiskan kuota gratisnya.
+app.get("/api/live", (_req, res) => {
+  res.json({ ok: true });
+});
+
 // Health check (dipakai hosting): ikut memeriksa koneksi database
 app.get("/api/health", async (_req, res) => {
   try {
