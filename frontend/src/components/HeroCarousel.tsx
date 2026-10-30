@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useStoreInfo } from "../hooks/useStoreInfo";
 import { getBanners } from "../services/store";
 import type { PublicBanner } from "../types";
+import { responsiveImage } from "../lib/image";
 
 const INTERVAL_MS = 6000;
 const HEIGHT = "h-[360px] sm:h-[440px] lg:h-[520px]";
@@ -101,6 +102,7 @@ export default function HeroCarousel() {
       {list.map((b, i) => {
         const active = i === current;
         const hasText = Boolean(b.title || b.subtitle || (b.buttonLabel && b.linkUrl));
+        const img = responsiveImage(b.url, [800, 1280, 1920]);
 
         return (
           <div
@@ -114,10 +116,14 @@ export default function HeroCarousel() {
             }`}
           >
             <img
-              src={b.url}
+              src={img.src}
+              srcSet={img.srcSet}
+              sizes="100vw"
               alt={b.title ?? ""}
               loading={i === 0 ? "eager" : "lazy"}
+              decoding="async"
               className="h-full w-full object-cover object-center"
+              fetchPriority={i === 0 ? "high" : undefined}
             />
 
             {hasText && (

@@ -6,6 +6,10 @@ import { ApiError } from "../lib/api";
 import { formatRupiah } from "../lib/format";
 import type { ProductDetail } from "../types";
 import { useCartStore } from "../store/cart";
+import { responsiveImage, sizedImage } from "../lib/image";
+import NoIndex from "../components/NoIndex";
+import { absoluteUrl, useJsonLd, useSeo } from "../hooks/usePageMeta";
+import { useStoreInfo } from "../hooks/useStoreInfo";
 
 const SIZE_ORDER = ["XS", "S", "M", "L", "XL", "XXL"];
 
@@ -24,14 +28,17 @@ export default function ProductDetailPage() {
       !(err instanceof ApiError && err.status === 404) && count < 1,
   });
 
-  if (isLoading) {
+    if (isLoading) {
     return (
-      <div className="mx-auto grid max-w-7xl animate-pulse gap-8 px-4 py-8 md:grid-cols-2">
-        <div className="aspect-[4/5] bg-neutral-200" />
-        <div className="space-y-4">
-          <div className="h-8 w-2/3 bg-neutral-200" />
-          <div className="h-6 w-1/4 bg-neutral-200" />
-          <div className="h-32 bg-neutral-200" />
+      <div className="mx-auto max-w-7xl px-4 py-8" aria-busy="true">
+        <div className="mb-6 h-5 w-56 animate-pulse bg-neutral-200" />
+        <div className="grid animate-pulse gap-8 md:grid-cols-2 md:gap-12">
+          <div className="aspect-[4/5] bg-neutral-200" />
+          <div className="space-y-4">
+            <div className="h-9 w-2/3 bg-neutral-200" />
+            <div className="h-8 w-1/4 bg-neutral-200" />
+            <div className="h-48 bg-neutral-200" />
+          </div>
         </div>
       </div>
     );
@@ -41,6 +48,7 @@ export default function ProductDetailPage() {
     const notFound = error instanceof ApiError && error.status === 404;
     return (
       <div className="mx-auto max-w-7xl px-4 py-20 text-center">
+        <NoIndex title="Produk tidak ditemukan" />
         <h1 className="text-2xl font-bold">
           {notFound ? "Produk tidak ditemukan" : "Gagal memuat produk"}
         </h1>
@@ -126,6 +134,39 @@ function ProductView({ product }: { product: ProductDetail }) {
         : "Stok tersedia";
 
   const image = product.images[activeImage];
+  const { data: store } = useStoreInfo();
+  const storeName = store?.name ?? "Kamai";
+  const plain = product.description.replace(/\s+/g, " ").trim();
+  const metaDescription = plain.length > 155 ? `${plain.slice(0, 152)}...` : plain;
+  const inStock = product.variants.some((v) => v.stock > 0);
+  const lowestPrice = product.variants.length > 0 ? Math.min(...product.variants.map((v) => v.price)) : product.price;
+  const ogImage = sizedImage(product.images[0]?.url, 1200);
+
+  useSeo({
+    title: `${product.name} | ${storeName}`,
+    description: metaDescription,
+    image: ogImage,
+    type: "product",
+  });
+
+  useJsonLd({
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: metaDescription,
+    sku: product.variants[0]?.sku,
+    category: product.category.name,
+    image: product.images.map((i) => sizedImage(i.url, 1200)),
+    brand: { "@type": "Brand", name: storeName },
+    offers: {
+      "@type": "Offer",
+      url: absoluteUrl(`/products/${product.slug}`),
+      priceCurrency: "IDR",
+      price: lowestPrice,
+      availability: inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      itemCondition: "https://schema.org/NewCondition",
+    },
+  });
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
@@ -145,8 +186,15 @@ function ProductView({ product }: { product: ProductDetail }) {
         <div>
           <div className="aspect-[4/5] overflow-hidden bg-neutral-100">
             {image ? (
-              <img src={image.url} alt={product.name} className="h-full w-full object-cover" />
-            ) : (
+              <img
+                {...responsiveImage(image.url, [600, 900, 1200])}
+                sizes="(min-width: 768px) 50vw, 100vw"
+                alt={product.name}
+                decoding="async"
+                className="h-full w-full object-cover"
+                loading="eager"
+                fetchPriority="high"
+              />            ) : (
               <div className="flex h-full items-center justify-center text-sm text-neutral-400">
                 Tidak ada gambar
               </div>
@@ -165,7 +213,7 @@ function ProductView({ product }: { product: ProductDetail }) {
                     i === activeImage ? "border-black" : "border-transparent"
                   }`}
                 >
-                  <img src={img.url} alt="" loading="lazy" className="h-full w-full object-cover" />
+                  <img src={sizedImage(img.url, 160)} alt="" loading="lazy" className="h-full w-full object-cover" />
                 </button>
               ))}
             </div>

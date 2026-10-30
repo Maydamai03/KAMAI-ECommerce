@@ -9,6 +9,7 @@ import { ApiError } from "../lib/api";
 import { formatDateTime, formatRupiah } from "../lib/format";
 import { forgetOrderEmail, recallOrderEmail, rememberOrderEmail } from "../lib/orderEmail";
 import { STATUS_LABEL, STATUS_STYLE } from "../lib/orderStatus";
+import { usePrivatePage } from "../hooks/usePageMeta";
 
 // const STATUS_LABEL: Record<OrderStatus, string> = {
 //   PENDING: "Menunggu pembayaran",
@@ -31,6 +32,7 @@ import { STATUS_LABEL, STATUS_STYLE } from "../lib/orderStatus";
 // };
 
 export default function OrderPage() {
+  usePrivatePage("Pesanan");
   const { orderNumber = "" } = useParams();
   const location = useLocation();
   const justCreated = Boolean(

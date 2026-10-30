@@ -129,7 +129,7 @@ export default function ProductImages({ productId, initial }: Props) {
         <h2 className="text-sm font-semibold uppercase tracking-wide">Gambar produk</h2>
         <p className="mt-1 text-xs text-neutral-500">
           Gambar pertama menjadi gambar utama (tampil di katalog). Disarankan foto potret rasio 4:5
-          (misalnya 800 x 1000 piksel), format JPEG, PNG, atau WebP, maksimal 5 MB per berkas, hingga{" "}
+          (misalnya 1200 x 1500 piksel), format JPEG, PNG, atau WebP, maksimal 5 MB per berkas, hingga{" "}
           {MAX_IMAGES} gambar. Perubahan gambar langsung tersimpan tanpa menunggu tombol simpan produk.
         </p>
       </div>

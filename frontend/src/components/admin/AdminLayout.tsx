@@ -1,5 +1,10 @@
 import { Link, Navigate, NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { Suspense } from "react";
+import PageFallback from "../PageFallback";
+import { usePrivatePage } from "../../hooks/usePageMeta";
+
+
 
 const NAV = [
   { to: "/admin", label: "Dashboard", end: true, ready: true },
@@ -11,6 +16,7 @@ const NAV = [
 
 export default function AdminLayout() {
   const { user, isLoading, logout } = useAuth();
+  usePrivatePage("Admin");
 
   if (isLoading) {
     return <div className="p-8 text-sm text-neutral-500">Memuat...</div>;
@@ -88,8 +94,7 @@ export default function AdminLayout() {
         </nav>
 
         <main className="min-w-0">
-          <Outlet />
-        </main>
+          <Suspense fallback={<PageFallback />}><Outlet /></Suspense>        </main>
       </div>
     </div>
   );

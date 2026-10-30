@@ -37,11 +37,30 @@ for (const part of (process.env.FRONTEND_URL ?? "").split(",").map((s) => s.trim
   }
 }
 
+// Alamat publik toko (untuk sitemap dan pratinjau tautan); bawaannya FRONTEND_URL pertama
+let siteUrl = allowedOrigins[0] ?? "";
+const siteRaw = process.env.SITE_URL?.trim();
+if (siteRaw) {
+  try {
+    const url = new URL(siteRaw);
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      errors.push(`SITE_URL: "${siteRaw}" harus diawali http:// atau https://`);
+    } else {
+      siteUrl = url.origin;
+    }
+  } catch {
+    errors.push(`SITE_URL: "${siteRaw}" bukan URL yang valid`);
+  }
+}
+
 if (parsed.success && parsed.data.NODE_ENV === "production") {
   const d = parsed.data;
 
   if (allowedOrigins.some((o) => !o.startsWith("https://"))) {
     errors.push("FRONTEND_URL: di production semua alamat harus https://");
+  }
+    if (!siteUrl.startsWith("https://")) {
+    errors.push("SITE_URL: di production harus https://");
   }
   if (/ganti|changeme|contoh/i.test(d.JWT_SECRET)) {
     errors.push("JWT_SECRET: tampaknya masih nilai contoh; buat string acak baru");
@@ -84,4 +103,5 @@ export const env = {
   port: parsed.data.PORT,
   allowedOrigins,
   cookieSameSite: parsed.data.COOKIE_SAMESITE,
+  siteUrl,
 };

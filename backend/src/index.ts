@@ -16,6 +16,7 @@ import { meRouter } from "./routes/me.routes";
 import { orderRouter } from "./routes/order.routes";
 import { paymentRouter } from "./routes/payment.routes";
 import { shippingRouter } from "./routes/shipping.routes";
+import { seoRouter } from "./routes/seo.routes";
 
 const app = express();
 
@@ -71,6 +72,7 @@ app.use("/api", cartRouter);
 app.use("/api", orderRouter);
 app.use("/api", paymentRouter);
 app.use("/api", shippingRouter);
+app.use("/api", seoRouter);
 
 // Harus paling bawah
 app.use("/api", notFoundHandler);

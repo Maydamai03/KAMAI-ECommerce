@@ -6,6 +6,7 @@ import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { getCategories, getProducts } from "../services/catalog";
 import { formatRupiah } from "../lib/format";
 import { ArrowRightIcon, CloseIcon, SearchIcon } from "./icons";
+import { sizedImage } from "../lib/image";
 
 const pill =
   "inline-flex items-center rounded-full border border-neutral-300 px-4 py-2 text-sm text-neutral-800 transition-colors hover:border-black hover:bg-black hover:text-white";
@@ -125,7 +126,7 @@ export default function SearchPanel({ onClose }: { onClose: () => void }) {
                         className="flex items-center gap-3 py-3 transition-colors hover:bg-neutral-50"
                       >
                         <div className="h-16 w-12 shrink-0 overflow-hidden bg-neutral-100">
-                          {p.image && <img src={p.image} alt="" loading="lazy" className="h-full w-full object-cover" />}
+                          {p.image && <img src={sizedImage(p.image, 160)} alt="" loading="lazy" className="h-full w-full object-cover" />}
                         </div>
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium">{p.name}</p>
